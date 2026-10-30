@@ -73,7 +73,7 @@ internal static class ResponseBudget
         {
             var previousMeta = result.Meta;
             result.Meta = previousMeta?.DeepClone().AsObject() ?? new JsonObject();
-            result.Meta["bimwright/dwg-mcp/response_budget"] = new JsonObject
+            result.Meta[Bimwright.Dwg.Plugin.ProductIdentity.MetaKeyPrefix + "response_budget"] = new JsonObject
             {
                 ["level"] = bytes >= config.ResponseStrongWarnBytesOrDefault ? "strong_warning" : "warning",
                 ["original_bytes"] = bytes, ["budget_bytes"] = limit

@@ -53,7 +53,7 @@ public sealed class ReleaseNotificationTests
         var notice = Notice(update);
         Assert.Equal("NEW_RELEASE_AVAILABLE", notice.Value<string>("code"));
         Assert.Equal(new[] { affected }, notice["components"]!.Values<string>());
-        Assert.Equal("dwg-mcp 0.2.2 is available for: " + affected + ".", notice.Value<string>("message"));
+        Assert.Equal("tbc-acad-mcp 0.2.2 is available for: " + affected + ".", notice.Value<string>("message"));
         Assert.Equal("notify_user_and_propose_update", notice.Value<string>("agent_action"));
         Assert.True(notice.Value<bool>("bundle_update_proposal_allowed"));
         Assert.True(notice.Value<bool>("requires_user_authorization"));

@@ -40,7 +40,7 @@ public static class RuntimeIdentity
         return new JObject
         {
             ["schema_version"] = 1,
-            ["product_id"] = "dwg-mcp",
+            ["product_id"] = ProductIdentity.Name,
             ["component"] = component,
             ["host_year"] = hostYear,
             ["process_id"] = process.Id,

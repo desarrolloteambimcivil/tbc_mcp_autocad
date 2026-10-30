@@ -28,7 +28,7 @@ namespace Bimwright.Dwg.Tests
         {
             var capturesDir = System.IO.Path.Combine(
                 System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
-                "Bimwright", "dwg-mcp", "captures");
+                "NourRouas", "tbc-acad-mcp", "captures");
             System.IO.Directory.CreateDirectory(capturesDir);
             var path = System.IO.Path.Combine(capturesDir, "toast-test-thumb.png");
             System.IO.File.WriteAllBytes(path, new byte[] { 0x89, 0x50, 0x4E, 0x47 });
@@ -278,7 +278,7 @@ namespace Bimwright.Dwg.Tests
         public void IsSafeImagePath_rejects_sibling_of_captures_directory()
         {
             var localAppData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
-            var siblingDir = System.IO.Path.Combine(localAppData, "Bimwright", "dwg-mcp", "capturesEvil");
+            var siblingDir = System.IO.Path.Combine(localAppData, "NourRouas", "tbc-acad-mcp", "capturesEvil");
             System.IO.Directory.CreateDirectory(siblingDir);
             var path = System.IO.Path.Combine(siblingDir, "evil.png");
             System.IO.File.WriteAllBytes(path, new byte[] { 0x89, 0x50, 0x4E, 0x47 });
@@ -364,7 +364,7 @@ namespace Bimwright.Dwg.Tests
         [InlineData(null, false, false)]
         public void LoadToastEnabled_uses_DWG_env_before_file(string value, bool fileValue, bool expected)
         {
-            const string envName = "BIMWRIGHT_DWG_ENABLE_TOAST";
+            const string envName = "TBC_ACAD_MCP_ENABLE_TOAST";
             var previous = Environment.GetEnvironmentVariable(envName);
             try
             {
@@ -379,7 +379,7 @@ namespace Bimwright.Dwg.Tests
         [Fact]
         public void LoadToastEnabled_ignores_the_unscoped_legacy_env()
         {
-            const string envName = "BIMWRIGHT_DWG_ENABLE_TOAST";
+            const string envName = "TBC_ACAD_MCP_ENABLE_TOAST";
             const string legacyName = "BIMWRIGHT_ENABLE_TOAST";
             var previous = Environment.GetEnvironmentVariable(envName);
             var previousLegacy = Environment.GetEnvironmentVariable(legacyName);

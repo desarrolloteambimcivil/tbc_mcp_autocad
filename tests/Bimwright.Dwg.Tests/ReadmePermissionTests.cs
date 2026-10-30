@@ -30,12 +30,12 @@ public class ReadmePermissionTests
             .SelectMany(type => type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly))
             .Select(method => method.GetCustomAttribute<McpServerToolAttribute>())
             .Where(tool => tool != null && tool.ReadOnly)
-            .Select(tool => "mcp__dwg-mcp__" + tool.Name).OrderBy(name => name).ToArray();
+            .Select(tool => "mcp__tbc-acad-mcp__" + tool.Name).OrderBy(name => name).ToArray();
         var actual = block.Groups[1].Value.Split('\n').Select(line => line.Trim())
-            .Where(line => line.StartsWith("mcp__dwg-mcp__", StringComparison.Ordinal)).OrderBy(name => name).ToArray();
+            .Where(line => line.StartsWith("mcp__tbc-acad-mcp__", StringComparison.Ordinal)).OrderBy(name => name).ToArray();
         Assert.Equal(actual.Length, actual.Distinct().Count());
         Assert.Equal(expected, actual);
-        Assert.DoesNotContain("mcp__dwg-mcp__dwg_send_code", actual);
-        Assert.Contains("mcp__dwg-mcp__*", readme); // The prose must also warn against wildcard rules.
+        Assert.DoesNotContain("mcp__tbc-acad-mcp__dwg_send_code", actual);
+        Assert.Contains("mcp__tbc-acad-mcp__*", readme); // The prose must also warn against wildcard rules.
     }
 }

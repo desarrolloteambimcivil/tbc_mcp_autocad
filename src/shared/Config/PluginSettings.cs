@@ -5,15 +5,15 @@ using Newtonsoft.Json.Linq;
 namespace Bimwright.Dwg.Plugin
 {
     /// <summary>
-    /// Plugin-side settings at %LOCALAPPDATA%\Bimwright\dwg-mcp\settings.json.
+    /// Plugin-side settings at %LOCALAPPDATA%\NourRouas\tbc-acad-mcp\settings.json.
     /// Env var overlays the file value at load time:
-    /// the MCPTOAST command writes the file; BIMWRIGHT_DWG_ENABLE_TOAST re-wins
+    /// the MCPTOAST command writes the file; TBC_ACAD_MCP_ENABLE_TOAST re-wins
     /// at next launch while it is set.
     /// </summary>
     public static partial class PluginSettings
     {
-        public const string EnvEnableToast = "BIMWRIGHT_DWG_ENABLE_TOAST";
-        public const string EnvAutoStartTransport = "BIMWRIGHT_DWG_AUTO_START_TRANSPORT";
+        public const string EnvEnableToast = "TBC_ACAD_MCP_ENABLE_TOAST";
+        public const string EnvAutoStartTransport = "TBC_ACAD_MCP_AUTO_START_TRANSPORT";
         public const bool DefaultAutoStartTransport = true;
         public const bool DefaultEnableToast = true;
         public const int DefaultToastIdleSeconds = 20;
@@ -24,16 +24,14 @@ namespace Bimwright.Dwg.Plugin
         internal static string FilePathOverride { get; set; }
 
         public static string DefaultFilePath =>
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Bimwright", "dwg-mcp", "settings.json");
+            Path.Combine(ProductIdentity.DataRoot(), "settings.json");
 
         private static string FilePath =>
             string.IsNullOrWhiteSpace(FilePathOverride) ? DefaultFilePath : FilePathOverride;
 
         public static bool LoadAutoStartTransport(out string source)
         {
-            var env = ParseBool(Environment.GetEnvironmentVariable(EnvAutoStartTransport));
+            var env = ParseBool(ProductIdentity.GetEnv(EnvAutoStartTransport));
             if (env.HasValue)
             {
                 source = EnvAutoStartTransport;
@@ -61,7 +59,7 @@ namespace Bimwright.Dwg.Plugin
 
         public static bool LoadToastEnabled()
         {
-            var env = ParseBool(Environment.GetEnvironmentVariable(EnvEnableToast));
+            var env = ParseBool(ProductIdentity.GetEnv(EnvEnableToast));
             if (env.HasValue)
                 return env.Value;
 

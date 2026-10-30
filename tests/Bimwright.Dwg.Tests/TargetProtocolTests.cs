@@ -17,7 +17,7 @@ namespace Bimwright.Dwg.Tests
         public async Task SDK_exposes_target_refusal_without_sending_the_mutation()
         {
             var root = Path.Combine(Path.GetTempPath(), "dwg-target-protocol-" + Guid.NewGuid().ToString("N"));
-            var dir = Path.Combine(root, "Bimwright", "dwg-mcp");
+            var dir = Path.Combine(root, "NourRouas", "tbc-acad-mcp");
             Directory.CreateDirectory(dir);
             using var current = Process.GetCurrentProcess();
             var calls = 0;
@@ -32,7 +32,7 @@ namespace Bimwright.Dwg.Tests
             start.ArgumentList.Add(typeof(Program).Assembly.Location);
             start.ArgumentList.Add("--config"); start.ArgumentList.Add(Path.Combine(root, "absent.json"));
             start.ArgumentList.Add("--target"); start.ArgumentList.Add("2024");
-            foreach (var key in start.Environment.Keys.Where(key => key.StartsWith("BIMWRIGHT_DWG_", StringComparison.OrdinalIgnoreCase)).ToArray()) start.Environment.Remove(key);
+            foreach (var key in start.Environment.Keys.Where(key => (key.StartsWith("BIMWRIGHT_DWG_", StringComparison.OrdinalIgnoreCase) || key.StartsWith("TBC_ACAD_MCP_", StringComparison.OrdinalIgnoreCase))).ToArray()) start.Environment.Remove(key);
             start.Environment["LOCALAPPDATA"] = root;
             using var process = Process.Start(start);
             var stderr = process.StandardError.ReadToEndAsync();

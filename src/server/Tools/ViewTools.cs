@@ -53,7 +53,7 @@ namespace Bimwright.Dwg.Server.Tools
         [McpServerTool(Name = "dwg_capture_view_image", ReadOnly = false, Destructive = true, Idempotent = false, OpenWorld = false), Description(
             "Capture the active drawing to a raster image (.png/.jpg/.jpeg/.bmp) using AutoCAD's in-process document preview API. "
             + "No desktop automation, zoom, geometry edits or DWG save. Wait for zoom/commands to complete before capturing. "
-            + "If output_path is omitted, saves to %LOCALAPPDATA%\\Bimwright\\dwg-mcp\\captures\\ with an auto-generated name. "
+            + "If output_path is omitted, saves to %LOCALAPPDATA%\\NourRouas\\tbc-acad-mcp\\captures\\ with an auto-generated name. "
             + "Returns inline MCP image content (up to 8 MiB) plus JSON with image path, actual dimensions, SHA-256, timestamp, document fingerprint, layout, viewport and camera. "
             + "Use capture_id with dwg_inspect_view_region when region_navigation.supported is true. "
             + "Camera coordinates describe the active viewport; do not assume one pixel-to-world mapping for tiled views or paper layouts. "

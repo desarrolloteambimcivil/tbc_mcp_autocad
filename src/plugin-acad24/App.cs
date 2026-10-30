@@ -28,7 +28,7 @@ namespace Bimwright.Dwg.Plugin
         private static HistoryWindow _history;
         private static System.Windows.Threading.Dispatcher _uiDispatcher;
 
-        // Card title ("dwg-mcp 2024"): tells cards from parallel gateways and AutoCAD years apart.
+        // Card title ("tbc-acad-mcp 2024"): tells cards from parallel gateways and AutoCAD years apart.
         private const string ToastTitle = Views.BrandAssets.ProductName + " " + PluginTarget.AutoCadYear;
 
         /// <summary>Set at startup; CommandDispatcher fires completion toasts through it.</summary>
@@ -56,15 +56,15 @@ namespace Bimwright.Dwg.Plugin
                 InitializeToast();
                 if (!AutoStartTransport)
                 {
-                    WriteLine("Bimwright DWG loaded; auto-start is off. Run MCPSTART to start listening.");
+                    WriteLine(ProductIdentity.Name + " loaded; auto-start is off. Run MCPSTART to start listening.");
                     return;
                 }
                 StartServerInternal();
-                WriteLine($"Bimwright DWG loaded and listening on {DescribeTransport(_server)}.");
+                WriteLine($"{ProductIdentity.Name} loaded and listening on {DescribeTransport(_server)}.");
             }
             catch (System.Exception ex)
             {
-                WriteLine($"Bimwright DWG loaded; auto-start failed ({ex.Message}). Run MCPSTART to retry.");
+                WriteLine($"{ProductIdentity.Name} loaded; auto-start failed ({ex.Message}). Run MCPSTART to retry.");
             }
         }
 
@@ -90,18 +90,18 @@ namespace Bimwright.Dwg.Plugin
         {
             if (_server != null && _server.IsRunning)
             {
-                WriteLine($"Bimwright DWG already running on {DescribeTransport(_server)}.");
+                WriteLine($"{ProductIdentity.Name} already running on {DescribeTransport(_server)}.");
                 SaveStartupPreference(true);
                 return;
             }
             try
             {
                 StartServerInternal();
-                WriteLine($"Bimwright DWG listening on {DescribeTransport(_server)}.");
+                WriteLine($"{ProductIdentity.Name} listening on {DescribeTransport(_server)}.");
             }
             catch (System.Exception ex)
             {
-                WriteLine($"Bimwright DWG start failed: {ex.Message}");
+                WriteLine($"{ProductIdentity.Name} start failed: {ex.Message}");
                 return;
             }
             SaveStartupPreference(true);
@@ -215,7 +215,7 @@ namespace Bimwright.Dwg.Plugin
             SaveStartupPreference(false);
             if (closeSettings)
                 CloseSettings();
-            WriteLine("Bimwright DWG stopped.");
+            WriteLine(ProductIdentity.Name + " stopped.");
         }
 
         internal static void ShowOrFocusSettings()
@@ -362,7 +362,7 @@ namespace Bimwright.Dwg.Plugin
         private static void WriteLine(string message)
         {
             var doc = Application.DocumentManager.MdiActiveDocument;
-            doc?.Editor.WriteMessage($"\n[Bimwright.Dwg] {message}\n");
+            doc?.Editor.WriteMessage($"\n[{ProductIdentity.Name}] {message}\n");
         }
     }
 }

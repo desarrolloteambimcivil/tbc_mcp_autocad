@@ -7,7 +7,7 @@ namespace Bimwright.Dwg.Plugin
     /// </summary>
     internal static partial class UnicodeStyleService
     {
-        internal const string StyleName = "Bimwright_Unicode";
+        internal const string StyleName = "TBC_Unicode";
         internal const string FontFileName = "OpenSans-CondensedLight.ttf";
         internal const string FontTypeFace = "Open Sans Condensed Light";
     }

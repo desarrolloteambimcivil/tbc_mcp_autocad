@@ -205,7 +205,7 @@ public class ResponseBudgetTests : OutputArtifactTestScope
         var bytes = ResponseBudget.Measure(result);
         var config = new DwgMcpConfig { ResponseWarnBytes = bytes + offset, ResponseStrongWarnBytes = bytes + (strong ? -1 : 100) };
         var delivered = ResponseBudget.Apply(result, config, true, "dwg_get_drawing_info");
-        var warning = delivered.Meta?["bimwright/dwg-mcp/response_budget"];
+        var warning = delivered.Meta?["desarrolloteambimcivil/tbc_mcp_autocad/response_budget"];
         if (offset > 0) Assert.Null(warning);
         else Assert.Equal(strong ? "strong_warning" : "warning", warning["level"].GetValue<string>());
     }

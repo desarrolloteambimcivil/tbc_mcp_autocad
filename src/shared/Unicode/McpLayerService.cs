@@ -5,7 +5,7 @@ namespace Bimwright.Dwg.Plugin
 {
     internal static class McpLayerService
     {
-        internal const string LayerName = "layer-bimwright-dwg";
+        internal const string LayerName = "layer-tbc-acad-mcp";
 
         internal static string EnsureWhiteLayer(Database db)
         {

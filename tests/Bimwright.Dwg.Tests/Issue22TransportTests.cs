@@ -130,7 +130,7 @@ namespace Bimwright.Dwg.Tests
             {
                 old.Start(); current.Start(); old.Stop();
                 Assert.Equal(current.AuthToken, JObject.Parse(File.ReadAllText(root.Descriptor(pipe ? "2027" : "2024"))).Value<string>("auth_token"));
-                if (!pipe) Assert.Equal(current.AuthToken, File.ReadAllLines(System.IO.Path.Combine(root.Path, "Bimwright", "portAcad24.txt"))[1]);
+                if (!pipe) Assert.Equal(current.AuthToken, File.ReadAllLines(System.IO.Path.Combine(root.Path, "NourRouas", "portAcad24.txt"))[1]);
                 Assert.True((await SendPing(current)).Value<bool>("ok"));
             }
             finally { old.Stop(); current.Stop(); }
@@ -224,10 +224,10 @@ namespace Bimwright.Dwg.Tests
             var path = root.Descriptor("2027");
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
             File.WriteAllText(path, "{\"pid\":");
-            AuthToken.CleanupLegacyDiscoveryFiles(System.IO.Path.Combine(root.Path, "Bimwright"));
+            AuthToken.CleanupLegacyDiscoveryFiles(System.IO.Path.Combine(root.Path, "NourRouas"));
             Assert.True(File.Exists(path));
             using (var held = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
-                AuthToken.CleanupLegacyDiscoveryFiles(System.IO.Path.Combine(root.Path, "Bimwright"));
+                AuthToken.CleanupLegacyDiscoveryFiles(System.IO.Path.Combine(root.Path, "NourRouas"));
             Assert.True(File.Exists(path));
         }
 
@@ -241,7 +241,7 @@ namespace Bimwright.Dwg.Tests
             {
                 var writer = Task.Run(() => { for (var i = 0; i < 100; i++) publisher.Publish("pipe", null, "dwg-test-only-not-connected"); });
                 for (var i = 0; i < 100; i++)
-                    Assert.Single(AuthToken.ListAvailable(System.IO.Path.Combine(root.Path, "Bimwright")));
+                    Assert.Single(AuthToken.ListAvailable(System.IO.Path.Combine(root.Path, "NourRouas")));
                 await writer;
             }
             finally { publisher.Close(); }
@@ -308,7 +308,7 @@ namespace Bimwright.Dwg.Tests
                 Environment.SetEnvironmentVariable("LOCALAPPDATA", Path);
                 DiagnosticLog.LocalAppDataOverride = Path;
             }
-            internal string Descriptor(string year) => System.IO.Path.Combine(Path, "Bimwright", "dwg-mcp", "acad-" + year + ".json");
+            internal string Descriptor(string year) => System.IO.Path.Combine(Path, "NourRouas", "tbc-acad-mcp", "acad-" + year + ".json");
             public void Dispose()
             {
                 DiagnosticLog.Flush();

@@ -8,17 +8,17 @@ namespace Bimwright.Dwg.Server
 {
     public class DwgMcpConfig
     {
-        public const string EnvTarget = "BIMWRIGHT_DWG_TARGET";
-        public const string EnvToolsets = "BIMWRIGHT_DWG_TOOLSETS";
-        public const string EnvReadOnly = "BIMWRIGHT_DWG_READ_ONLY";
-        public const string EnvEnableSendCode = "BIMWRIGHT_DWG_ENABLE_SEND_CODE";
-        public const string EnvEnableCallLog = "BIMWRIGHT_DWG_ENABLE_CALL_LOG";
-        public const string EnvEnableToolbaker = "BIMWRIGHT_DWG_ENABLE_TOOLBAKER";
-        public const string EnvAllowLanBind = "BIMWRIGHT_DWG_ALLOW_LAN_BIND";
-        public const string EnvLogLevel = "BIMWRIGHT_DWG_LOG_LEVEL";
-        public const string EnvResponseBudgetBytes = "BIMWRIGHT_DWG_RESPONSE_BUDGET_BYTES";
-        public const string EnvResponseWarnBytes = "BIMWRIGHT_DWG_RESPONSE_WARN_BYTES";
-        public const string EnvResponseStrongWarnBytes = "BIMWRIGHT_DWG_RESPONSE_STRONG_WARN_BYTES";
+        public const string EnvTarget = "TBC_ACAD_MCP_TARGET";
+        public const string EnvToolsets = "TBC_ACAD_MCP_TOOLSETS";
+        public const string EnvReadOnly = "TBC_ACAD_MCP_READ_ONLY";
+        public const string EnvEnableSendCode = "TBC_ACAD_MCP_ENABLE_SEND_CODE";
+        public const string EnvEnableCallLog = "TBC_ACAD_MCP_ENABLE_CALL_LOG";
+        public const string EnvEnableToolbaker = "TBC_ACAD_MCP_ENABLE_TOOLBAKER";
+        public const string EnvAllowLanBind = "TBC_ACAD_MCP_ALLOW_LAN_BIND";
+        public const string EnvLogLevel = "TBC_ACAD_MCP_LOG_LEVEL";
+        public const string EnvResponseBudgetBytes = "TBC_ACAD_MCP_RESPONSE_BUDGET_BYTES";
+        public const string EnvResponseWarnBytes = "TBC_ACAD_MCP_RESPONSE_WARN_BYTES";
+        public const string EnvResponseStrongWarnBytes = "TBC_ACAD_MCP_RESPONSE_STRONG_WARN_BYTES";
         public const int DefaultResponseBudgetBytes = 80 * 1024 * 1024;
         public const int DefaultResponseWarnBytes = 1024 * 1024;
         public const int DefaultResponseStrongWarnBytes = 8 * 1024 * 1024;
@@ -38,12 +38,10 @@ namespace Bimwright.Dwg.Server
 
         /// <summary>
         /// Default config file the installer seeds and the server reads when no
-        /// --config is passed: %LOCALAPPDATA%\Bimwright\dwg-mcp\dwgmcp.config.json.
+        /// --config is passed: %LOCALAPPDATA%\NourRouas\tbc-acad-mcp\dwgmcp.config.json.
         /// </summary>
         public static string DefaultConfigFilePath =>
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Bimwright", "dwg-mcp", "dwgmcp.config.json");
+            Path.Combine(Bimwright.Dwg.Plugin.ProductIdentity.DataRoot(), "dwgmcp.config.json");
 
         [JsonIgnore] public bool ReadOnlyOrDefault => ReadOnly ?? false;
         [JsonIgnore] public bool EnableSendCodeOrDefault => EnableSendCode ?? true;
@@ -74,7 +72,7 @@ namespace Bimwright.Dwg.Server
             Func<string, string> envLookup = null)
         {
             args = args ?? Array.Empty<string>();
-            envLookup = envLookup ?? Environment.GetEnvironmentVariable;
+            envLookup = Bimwright.Dwg.Plugin.ProductIdentity.WithLegacyFallback(envLookup);
 
             var cliConfig = GetOptionValue(args, "--config");
             var path = !string.IsNullOrWhiteSpace(cliConfig)

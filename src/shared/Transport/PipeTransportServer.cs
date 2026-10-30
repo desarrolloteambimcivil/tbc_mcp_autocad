@@ -21,7 +21,7 @@ namespace Bimwright.Dwg.Plugin
         {
             _target = string.IsNullOrWhiteSpace(target) ? "2025" : target;
             _pipeName = string.IsNullOrWhiteSpace(pipeName)
-                ? "BimwrightDwg-" + _target + "-" + Process.GetCurrentProcess().Id : pipeName;
+                ? ProductIdentity.PipePrefix + _target + "-" + Process.GetCurrentProcess().Id : pipeName;
         }
 
         public int? Port => null;

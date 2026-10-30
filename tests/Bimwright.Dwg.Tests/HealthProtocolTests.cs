@@ -33,7 +33,7 @@ namespace Bimwright.Dwg.Tests
             start.ArgumentList.Add("--toolsets");
             start.ArgumentList.Add("query");
             if (readOnly) start.ArgumentList.Add("--read-only");
-            foreach (var key in start.Environment.Keys.Where(k => k.StartsWith("BIMWRIGHT_DWG_", StringComparison.OrdinalIgnoreCase)).ToArray())
+            foreach (var key in start.Environment.Keys.Where(k => (k.StartsWith("BIMWRIGHT_DWG_", StringComparison.OrdinalIgnoreCase) || k.StartsWith("TBC_ACAD_MCP_", StringComparison.OrdinalIgnoreCase))).ToArray())
                 start.Environment.Remove(key);
             start.Environment["LOCALAPPDATA"] = root;
             using var process = Process.Start(start);
@@ -66,7 +66,7 @@ namespace Bimwright.Dwg.Tests
                 Assert.Equal(JTokenType.Null, health["update"]["notification"].Type);
                 Assert.Equal("check_only", health["update_guidance"].Value<string>("mode"));
                 Assert.DoesNotContain("install.ps1", health["update_guidance"].ToString());
-                Assert.Equal("dwg-mcp", health["setup_gateway"].Value<string>("product_id"));
+                Assert.Equal("tbc-acad-mcp", health["setup_gateway"].Value<string>("product_id"));
                 Assert.Equal(process.Id, health["setup_gateway"].Value<int>("process_id"));
                 Assert.Equal("loaded_assembly", health["setup_gateway"].Value<string>("identity_basis"));
                 Assert.Equal(initialize["result"]["serverInfo"].Value<string>("version"), health["mcp"].Value<string>("server_informational_version"));

@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Bimwright.Dwg.Server</RootNamespace>
-    <AssemblyName>Bimwright.Dwg.Server</AssemblyName>
+    <AssemblyName>tbc-acad-mcp</AssemblyName>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
@@ -12,14 +12,14 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <PackAsTool>true</PackAsTool>
-    <ToolCommandName>bimwright-dwg</ToolCommandName>
-    <PackageId>Bimwright.Dwg.Server</PackageId>
+    <ToolCommandName>tbc-acad-mcp</ToolCommandName>
+    <PackageId>TbcAcadMcp.Server</PackageId>
     <Version>2.1.1</Version>
     <IncludeSourceRevisionInInformationalVersion>true</IncludeSourceRevisionInInformationalVersion>
-    <Authors>Khoa Le</Authors>
-    <Description>MCP gateway for AutoCAD 2022-2027 DWG workflows: text reading, translation rewriting, target routing, optional ToolBaker, and opt-in code execution.</Description>
-    <PackageProjectUrl>https://github.com/bimwright/dwg-mcp</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/bimwright/dwg-mcp</RepositoryUrl>
+    <Authors>Nour Rouas</Authors>
+    <Description>tbc-acad-mcp: MCP gateway for AutoCAD and Civil 3D 2022-2027 DWG workflows (fork of bimwright/dwg-mcp): drawing reads, text reading and rewriting, target routing, optional ToolBaker, and opt-in code execution.</Description>
+    <PackageProjectUrl>https://github.com/desarrolloteambimcivil/tbc_mcp_autocad</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/desarrolloteambimcivil/tbc_mcp_autocad</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageTags>mcp;autocad;dwg;ai;translation</PackageTags>
@@ -44,6 +44,7 @@
     <Compile Include="..\shared\Transport\TransportFraming.cs" LinkBase="Shared\Transport" />
     <Compile Include="..\shared\Transport\TransportDiscovery.cs" LinkBase="Shared\Transport" />
     <Compile Include="..\shared\Infrastructure\RuntimeIdentity.cs" LinkBase="Shared\Infrastructure" />
+    <Compile Include="..\shared\Infrastructure\ProductIdentity.cs" LinkBase="Shared\Infrastructure" />
     <Compile Include="..\shared\Infrastructure\OutputArtifactStore.cs" LinkBase="Shared\Infrastructure" />
     <Compile Include="..\shared\Infrastructure\FileOutputReceipt.cs" LinkBase="Shared\Infrastructure" />
     <Compile Include="..\shared\Infrastructure\OutputReceiptFacts.cs" LinkBase="Shared\Infrastructure" />

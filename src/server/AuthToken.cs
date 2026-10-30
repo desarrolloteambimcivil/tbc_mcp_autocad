@@ -19,7 +19,7 @@ namespace Bimwright.Dwg.Server
                 var localAppData = Environment.GetEnvironmentVariable("LOCALAPPDATA");
                 if (string.IsNullOrWhiteSpace(localAppData))
                     localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                return Path.Combine(localAppData, "Bimwright");
+                return Bimwright.Dwg.Plugin.ProductIdentity.VendorRoot(localAppData);
             }
         }
 
@@ -85,7 +85,7 @@ namespace Bimwright.Dwg.Server
             if (!string.IsNullOrWhiteSpace(target))
             {
                 throw new InvalidOperationException(
-                    "No AutoCAD " + target + " discovery file found. Start AutoCAD " + target + " and load the Bimwright DWG plugin.");
+                    "No AutoCAD " + target + " discovery file found. Start AutoCAD " + target + " and load the " + Bimwright.Dwg.Plugin.ProductIdentity.Name + " plugin.");
             }
 
             throw new InvalidOperationException(
@@ -312,7 +312,7 @@ namespace Bimwright.Dwg.Server
         }
 
         private static string JsonDiscoveryDir(string root)
-            => Path.Combine(root, "dwg-mcp");
+            => Path.Combine(root, Bimwright.Dwg.Plugin.ProductIdentity.ProductFolder);
 
         private static string LegacyDiscoveryPath(string root)
             => Path.Combine(root, "portAcad24.txt");

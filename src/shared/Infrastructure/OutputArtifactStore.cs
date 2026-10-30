@@ -28,7 +28,7 @@ namespace Bimwright.Dwg.Plugin
                 if (RootOverride != null) return RootOverride;
                 var local = Environment.GetEnvironmentVariable("LOCALAPPDATA");
                 if (string.IsNullOrWhiteSpace(local)) local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                return Path.Combine(local, "Bimwright", "dwg-mcp", "outputs");
+                return Path.Combine(ProductIdentity.DataRoot(local), "outputs");
             }
         }
 

@@ -122,7 +122,7 @@ namespace Bimwright.Dwg.Plugin.View
         }
 
         /// <summary>
-        /// Builds a default capture path under %LOCALAPPDATA%\Bimwright\dwg-mcp\captures\ and ensures the directory exists.
+        /// Builds a default capture path under %LOCALAPPDATA%\NourRouas\tbc-acad-mcp\captures\ and ensures the directory exists.
         /// </summary>
         internal static string BuildDefaultOutputPath(string imageFormat, out string error)
         {
@@ -132,9 +132,7 @@ namespace Bimwright.Dwg.Plugin.View
 
             try
             {
-                string dir = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "Bimwright", "dwg-mcp", "captures");
+                string dir = Path.Combine(ProductIdentity.DataRoot(), "captures");
                 Directory.CreateDirectory(dir);
                 string name = "dwg-capture-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff") + "-" + Guid.NewGuid().ToString("N") + "." + ext;
                 return Path.Combine(dir, name);

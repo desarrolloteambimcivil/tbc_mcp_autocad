@@ -51,7 +51,7 @@ namespace Bimwright.Dwg.Plugin
         {
             try
             {
-                var root = Path.GetFullPath(Path.Combine(LocalAppDataOverride ?? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Bimwright", "dwg-mcp"));
+                var root = Path.GetFullPath(Path.Combine(LocalAppDataOverride ?? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), ProductIdentity.VendorFolder, ProductIdentity.ProductFolder));
                 if (!Queue.TryAdd(new Entry { Component = Safe(component, 64), Message = Safe(message, MaxMessageCharacters), Year = Safe(year ?? "unknown", 16), Root = root }))
                     Interlocked.Increment(ref _dropped);
             }
@@ -82,7 +82,7 @@ namespace Bimwright.Dwg.Plugin
         {
             try
             {
-                var root = Path.GetFullPath(Path.Combine(LocalAppDataOverride ?? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Bimwright", "dwg-mcp"));
+                var root = Path.GetFullPath(Path.Combine(LocalAppDataOverride ?? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), ProductIdentity.VendorFolder, ProductIdentity.ProductFolder));
                 if (!Queue.TryAdd(new Entry { Cleanup = true, Root = root })) Interlocked.Increment(ref _dropped);
             }
             catch { Interlocked.Increment(ref _dropped); }
@@ -149,9 +149,9 @@ namespace Bimwright.Dwg.Plugin
                 // Legacy tails and repeat summaries use this path too.
                 message = Safe(message, MaxMessageCharacters);
                 var root = entry.Root;
-                BoundedLogFile.RefuseLink(Path.Combine(root, "dwg-mcp.log"));
+                BoundedLogFile.RefuseLink(Path.Combine(root, ProductIdentity.Name + ".log"));
                 Directory.CreateDirectory(root);
-                var path = Path.Combine(root, "dwg-mcp.log");
+                var path = Path.Combine(root, ProductIdentity.Name + ".log");
                 var text = DateTime.UtcNow.ToString("o", System.Globalization.CultureInfo.InvariantCulture) + " pid=" + Pid + " autocad=" + entry.Year + " [" + entry.Component + "] " + message + "\n";
                 var bytes = Utf8.GetBytes(text);
                 BoundedLogFile.WithLock(path, () =>
@@ -240,10 +240,10 @@ namespace Bimwright.Dwg.Plugin
         private static List<Action> CleanupOperations(string current)
         {
             var operations = new List<Action>();
-            var local = Path.GetDirectoryName(Path.GetDirectoryName(current));
-            var roots = new[] { current, Path.Combine(local, "Bimwright", "Dwg") };
+            // Only this product's data root: folders of the upstream dwg-mcp product are never maintained here.
+            var roots = new[] { current };
             // Also bound the active diagnostics pair when no new messages arrive.
-            var diagnostics = Path.Combine(current, "dwg-mcp.log");
+            var diagnostics = Path.Combine(current, ProductIdentity.Name + ".log");
             operations.Add(() =>
             {
                 BoundedLogFile.WithLock(diagnostics, () =>
@@ -273,7 +273,7 @@ namespace Bimwright.Dwg.Plugin
                 }
             foreach (var root in roots)
             {
-                foreach (var group in new[] { "dwg-mcp-calls", "journal" })
+                foreach (var group in new[] { ProductIdentity.Name + "-calls", "journal" })
                     operations.Add(() => BoundedLogFile.MaintainGroup(root, group));
             }
             return operations;

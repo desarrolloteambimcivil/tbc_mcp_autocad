@@ -26,7 +26,7 @@ namespace Bimwright.Dwg.Tests
         public void Per_instance_discovery_is_read_and_deduplicates_the_year_alias()
         {
             var root = Path.Combine(Path.GetTempPath(), "dwg-instance-" + Guid.NewGuid().ToString("N"));
-            var directory = Path.Combine(root, "dwg-mcp");
+            var directory = Path.Combine(root, "tbc-acad-mcp");
             Directory.CreateDirectory(directory);
             try
             {
@@ -50,7 +50,7 @@ namespace Bimwright.Dwg.Tests
         public async Task Same_year_instances_require_explicit_PID_and_reject_reused_process_identity()
         {
             var root = Path.Combine(Path.GetTempPath(), "dwg-two-instances-" + Guid.NewGuid().ToString("N"));
-            var directory = Path.Combine(root, "dwg-mcp");
+            var directory = Path.Combine(root, "tbc-acad-mcp");
             Directory.CreateDirectory(directory);
             var start = new ProcessStartInfo("dotnet") { UseShellExecute = false, RedirectStandardInput = true,
                 RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true };

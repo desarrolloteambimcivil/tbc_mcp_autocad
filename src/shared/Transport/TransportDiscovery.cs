@@ -22,9 +22,9 @@ namespace Bimwright.Dwg.Plugin
         internal TransportDiscovery(string target, string token)
         {
             _target = target; _token = token;
-            _root = Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%\Bimwright");
-            _alias = Path.Combine(_root, "dwg-mcp", "acad-" + target + ".json");
-            _path = Path.Combine(_root, "dwg-mcp", "acad-" + target + "-" + _pid + ".json");
+            _root = ProductIdentity.VendorRoot(Environment.ExpandEnvironmentVariables("%LOCALAPPDATA%"));
+            _alias = Path.Combine(_root, ProductIdentity.ProductFolder, "acad-" + target + ".json");
+            _path = Path.Combine(_root, ProductIdentity.ProductFolder, "acad-" + target + "-" + _pid + ".json");
         }
 
         internal void Publish(string transport, int? port, string pipeName)

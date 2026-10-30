@@ -15,7 +15,7 @@ namespace Bimwright.Dwg.Plugin.Localization
         private static readonly Dictionary<string, string> En = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["toast.connected.title"] = "Agent connected",
-            ["toast.connected.summary"] = "dwg-mcp is ready",
+            ["toast.connected.summary"] = "tbc-acad-mcp is ready",
             ["toast.failed.default"] = "Tool call failed",
             ["toast.capture.saved"] = "Saved {fileName}",
             ["toast.capture.savedSize"] = "Saved {fileName} · {width}×{height} {format}",
@@ -67,7 +67,7 @@ namespace Bimwright.Dwg.Plugin.Localization
             ["history.footer"] = "{count} entries · Session only (latest 1,000). Sanitized details are limited to 4,096 characters each; code bodies are omitted.",
             ["settings.general.history"] = "Open session History",
             ["settings.general.history.help"] = "View or copy sanitized call details kept in memory. New session clears these entries. Persistent call logging remains opt-in in the gateway.",
-            ["settings.title"] = "BIMwright Settings",
+            ["settings.title"] = "tbc-acad-mcp Settings",
             ["settings.tab.general"] = "General",
             ["settings.tab.toast"] = "Toast",
             ["settings.tab.tools"] = "Tools",

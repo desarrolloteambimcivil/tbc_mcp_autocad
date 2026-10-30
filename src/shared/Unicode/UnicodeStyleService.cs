@@ -19,7 +19,7 @@ namespace Bimwright.Dwg.Plugin
 
     internal static class UnicodeStyleService
     {
-        internal const string StyleName = "Bimwright_Unicode";
+        internal const string StyleName = "TBC_Unicode";
         internal const string FontFileName = "OpenSans-CondensedLight.ttf";
         internal const string FontTypeFace = "Open Sans Condensed Light";
         internal const string FontDownloadUrl =
@@ -205,9 +205,7 @@ namespace Bimwright.Dwg.Plugin
             if (File.Exists(bundledFont) && HasExpectedSha256(bundledFont, FontFileSha256))
                 return bundledFont;
 
-            var cacheDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Bimwright", "dwg-mcp", "Fonts");
+            var cacheDir = Path.Combine(ProductIdentity.DataRoot(), "Fonts");
             var cachePath = Path.Combine(cacheDir, FontFileName);
             if (File.Exists(cachePath))
             {

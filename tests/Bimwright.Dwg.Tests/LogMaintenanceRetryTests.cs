@@ -17,8 +17,8 @@ public sealed class LogMaintenanceRetryTests : IDisposable
 {
     private readonly string root = Path.Combine(Path.GetTempPath(), "dwg-maintenance-retry-" + Guid.NewGuid().ToString("N"));
     private readonly string previous = DiagnosticLog.LocalAppDataOverride;
-    private string Current => Path.Combine(root, "Bimwright", "dwg-mcp");
-    private string Diagnostics => Path.Combine(Current, "dwg-mcp.log");
+    private string Current => Path.Combine(root, "NourRouas", "tbc-acad-mcp");
+    private string Diagnostics => Path.Combine(Current, "tbc-acad-mcp.log");
 
     public LogMaintenanceRetryTests()
     {
@@ -47,11 +47,10 @@ public sealed class LogMaintenanceRetryTests : IDisposable
     }
 
     [Theory]
-    [InlineData("dwg-mcp")]
-    [InlineData("Dwg")]
-    public void Locked_debug_tail_completes_after_unlock_in_both_existing_roots(string product)
+    [InlineData("tbc-acad-mcp")]
+    public void Locked_debug_tail_completes_after_unlock_in_the_data_root(string product)
     {
-        var path = Path.Combine(root, "Bimwright", product, "debug.log");
+        var path = Path.Combine(root, "NourRouas", product, "debug.log");
         Oversize(path, 100000);
         using (var held = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
         {
@@ -68,13 +67,11 @@ public sealed class LogMaintenanceRetryTests : IDisposable
     }
 
     [Theory]
-    [InlineData("dwg-mcp", "dwg-mcp-calls")]
-    [InlineData("dwg-mcp", "journal")]
-    [InlineData("Dwg", "dwg-mcp-calls")]
-    [InlineData("Dwg", "journal")]
+    [InlineData("tbc-acad-mcp", "tbc-acad-mcp-calls")]
+    [InlineData("tbc-acad-mcp", "journal")]
     public void Locked_generated_archive_is_pruned_after_unlock_without_touching_personal_files(string product, string group)
     {
-        var folder = Path.Combine(root, "Bimwright", product);
+        var folder = Path.Combine(root, "NourRouas", product);
         Directory.CreateDirectory(folder);
         var archive = Path.Combine(folder, group + "-20200101-000000.jsonl");
         File.WriteAllText(archive, "expired");
@@ -90,7 +87,7 @@ public sealed class LogMaintenanceRetryTests : IDisposable
         WaitIdle();
         Assert.False(File.Exists(archive));
         Assert.Contains("state=completed", DiagnosticLog.MaintenanceStatus);
-        foreach (var path in Directory.GetFiles(folder, "*", SearchOption.AllDirectories).Where(path => Path.GetFileName(path) != "dwg-mcp.log"))
+        foreach (var path in Directory.GetFiles(folder, "*", SearchOption.AllDirectories).Where(path => Path.GetFileName(path) != "tbc-acad-mcp.log"))
             Assert.Equal("preserve", File.ReadAllText(path));
     }
 
@@ -106,7 +103,7 @@ public sealed class LogMaintenanceRetryTests : IDisposable
         Assert.Contains("state=completed", DiagnosticLog.MaintenanceStatus);
         Assert.InRange(new FileInfo(path).Length, 1, DiagnosticLog.FileBytes);
         Assert.Contains("recent-tail", File.ReadAllText(path));
-        Assert.All(Directory.GetFiles(Current, "dwg-mcp.log*"), file => Assert.True(new FileInfo(file).Length <= DiagnosticLog.FileBytes));
+        Assert.All(Directory.GetFiles(Current, "tbc-acad-mcp.log*"), file => Assert.True(new FileInfo(file).Length <= DiagnosticLog.FileBytes));
     }
 
     [Fact]
@@ -201,7 +198,9 @@ public sealed class LogMaintenanceRetryTests : IDisposable
     public void Permanent_failure_is_not_replayed_when_another_operation_retries()
     {
         var denied = Path.Combine(Current, "debug.log"); Oversize(denied, 100000);
-        var locked = Path.Combine(root, "Bimwright", "Dwg", "debug.log"); Oversize(locked, 100000);
+        var locked = Path.Combine(Current, "journal-20200101-000000.jsonl");
+        File.WriteAllText(locked, "expired");
+        File.SetLastWriteTimeUtc(locked, DateTime.UtcNow.AddDays(-40));
         File.SetAttributes(denied, FileAttributes.ReadOnly);
         try
         {
@@ -214,7 +213,7 @@ public sealed class LogMaintenanceRetryTests : IDisposable
                 File.SetAttributes(denied, FileAttributes.Normal);
             }
             WaitIdle();
-            Assert.InRange(new FileInfo(locked).Length, 1, 64 * 1024);
+            Assert.False(File.Exists(locked));
             Assert.True(new FileInfo(denied).Length > 64 * 1024, "A permanent failure was replayed during another operation's retry.");
             Assert.Contains("state=failed", DiagnosticLog.MaintenanceStatus);
             Assert.Contains("reason=access_denied", DiagnosticLog.MaintenanceStatus);
@@ -222,29 +221,20 @@ public sealed class LogMaintenanceRetryTests : IDisposable
         finally { File.SetAttributes(denied, FileAttributes.Normal); }
     }
 
-    [Fact]
-    public async Task Linked_root_is_refused_once_and_never_modifies_the_link_target()
+    [Theory]
+    [InlineData("Dwg")]
+    [InlineData("dwg-mcp")]
+    public void Upstream_dwg_mcp_folders_are_never_maintained(string product)
     {
-        var target = Path.Combine(root, "junction-target");
-        Directory.CreateDirectory(target);
-        var debug = Path.Combine(target, "debug.log"); Oversize(debug, 100000);
-        var link = Path.Combine(root, "Bimwright", "Dwg");
-        var start = new ProcessStartInfo("cmd.exe") { UseShellExecute = false, CreateNoWindow = true };
-        start.ArgumentList.Add("/c"); start.ArgumentList.Add("mklink"); start.ArgumentList.Add("/J");
-        start.ArgumentList.Add(link); start.ArgumentList.Add(target);
-        using (var process = Process.Start(start)) { await process.WaitForExitAsync(); Assert.Equal(0, process.ExitCode); }
-        try
-        {
-            var original = File.ReadAllBytes(debug);
-            DiagnosticLog.MaintainLegacyLogs(); WaitIdle();
-            Assert.Contains("state=failed attempt=1/3", DiagnosticLog.MaintenanceStatus);
-            Assert.Contains("reason=unsafe_link", DiagnosticLog.MaintenanceStatus);
-            await Task.Delay(DiagnosticLog.MaintenanceRetryDelayMilliseconds + 200);
-            Assert.Contains("attempt=1/3", DiagnosticLog.MaintenanceStatus);
-            Assert.Equal(original, File.ReadAllBytes(debug));
-            Assert.Single(Directory.GetFiles(target));
-        }
-        finally { Directory.Delete(link); }
+        var folder = Path.Combine(root, "Bimwright", product);
+        var debug = Path.Combine(folder, "debug.log"); Oversize(debug, 100000);
+        var archive = Path.Combine(folder, "dwg-mcp-calls-20200101-000000.jsonl");
+        File.WriteAllText(archive, "expired");
+        File.SetLastWriteTimeUtc(archive, DateTime.UtcNow.AddDays(-40));
+        var original = File.ReadAllBytes(debug);
+        DiagnosticLog.MaintainLegacyLogs(); WaitIdle();
+        Assert.Equal(original, File.ReadAllBytes(debug));
+        Assert.True(File.Exists(archive));
     }
 
     [Fact]

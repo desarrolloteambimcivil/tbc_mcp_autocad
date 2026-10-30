@@ -55,7 +55,7 @@ namespace Bimwright.Dwg.Tests
             foreach (var flag in flags.Split(' ', StringSplitOptions.RemoveEmptyEntries)) start.ArgumentList.Add(flag);
             // Don't inherit the owner's runtime preferences. No discovery calls are
             // made: the only tools/call below is refused locally before dispatch.
-            foreach (var key in start.Environment.Keys.Where(key => key.StartsWith("BIMWRIGHT_DWG_", StringComparison.OrdinalIgnoreCase)).ToArray())
+            foreach (var key in start.Environment.Keys.Where(key => (key.StartsWith("BIMWRIGHT_DWG_", StringComparison.OrdinalIgnoreCase) || key.StartsWith("TBC_ACAD_MCP_", StringComparison.OrdinalIgnoreCase))).ToArray())
                 start.Environment.Remove(key);
             start.Environment["LOCALAPPDATA"] = root;
             using var process = Process.Start(start);

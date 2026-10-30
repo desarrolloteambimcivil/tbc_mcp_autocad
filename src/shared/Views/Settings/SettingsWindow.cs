@@ -267,12 +267,12 @@ namespace Bimwright.Dwg.Plugin.Views.Settings
             var version = Assembly.GetExecutingAssembly().GetName().Version;
             panel.Children.Add(Body(L.T("settings.about.version") + " " + (version == null ? "" : version.ToString())));
             panel.Children.Add(Help(L.T("settings.about.description")));
-            panel.Children.Add(Body(L.T("settings.about.author") + ": Bimwright"));
+            panel.Children.Add(Body(L.T("settings.about.author") + ": " + ProductIdentity.AuthorLine + " (fork of dwg-mcp by Bimwright)"));
             panel.Children.Add(Body(L.T("settings.about.license") + ": Apache-2.0"));
             var link = new TextBlock { Margin = new Thickness(0, 8, 0, 0) };
             var hyperlink = new System.Windows.Documents.Hyperlink(new System.Windows.Documents.Run(L.T("settings.about.github")))
             {
-                NavigateUri = new Uri("https://github.com/bimwright/dwg-mcp")
+                NavigateUri = new Uri(ProductIdentity.RepositoryUrl)
             };
             hyperlink.RequestNavigate += (_, e) =>
             {

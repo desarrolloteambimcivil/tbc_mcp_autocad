@@ -15,7 +15,7 @@ namespace Bimwright.Dwg.Tests
             var options = new ModelContextProtocol.Server.McpServerOptions();
             typeof(Program).GetMethod("ConfigureMcpServerOptions", BindingFlags.NonPublic | BindingFlags.Static)
                 .Invoke(null, new object[] { options });
-            Assert.Equal("dwg-mcp", options.ServerInfo.Name);
+            Assert.Equal("tbc-acad-mcp", options.ServerInfo.Name);
             Assert.Equal(typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion, options.ServerInfo.Version);
         }
 

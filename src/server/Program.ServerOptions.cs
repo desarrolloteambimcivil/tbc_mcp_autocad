@@ -13,11 +13,11 @@ namespace Bimwright.Dwg.Server
         {
             opts.ServerInfo = new ModelContextProtocol.Protocol.Implementation
             {
-                Name = "dwg-mcp",
-                Title = "DWG MCP",
+                Name = Bimwright.Dwg.Plugin.ProductIdentity.Name,
+                Title = "TBC AutoCAD MCP",
                 Version = ServerInformationalVersion,
-                Description = "Model Context Protocol gateway for Autodesk AutoCAD DWG workflows",
-                WebsiteUrl = "https://github.com/bimwright/dwg-mcp"
+                Description = "Model Context Protocol gateway for Autodesk AutoCAD and Civil 3D DWG workflows",
+                WebsiteUrl = Bimwright.Dwg.Plugin.ProductIdentity.RepositoryUrl
             };
             opts.ServerInstructions = ServerInstructions.Text;
         }

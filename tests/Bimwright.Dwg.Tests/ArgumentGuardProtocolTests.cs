@@ -154,7 +154,7 @@ public class ArgumentGuardProtocolTests
                         ["acad_year"] = 2024, ["target_id"] = "acad-2024-" + ownerId, ["document_id"] = "argument-guard-document" }
                 }.ToString(Formatting.None);
             });
-            var profile = Path.Combine(root, "Bimwright", "dwg-mcp");
+            var profile = Path.Combine(root, "NourRouas", "tbc-acad-mcp");
             Directory.CreateDirectory(profile);
             File.WriteAllText(Path.Combine(profile, "acad-2024-" + owner.Id + ".json"), JsonConvert.SerializeObject(new DiscoveryInfo
             {
@@ -169,7 +169,7 @@ public class ArgumentGuardProtocolTests
             start.ArgumentList.Add(typeof(Program).Assembly.Location);
             foreach (var argument in new[] { "--config", Path.Combine(root, "absent.json"), "--toolsets", "all", "--target", "pid:" + owner.Id,
                                              "--disable-call-log" }) start.ArgumentList.Add(argument);
-            foreach (var key in start.Environment.Keys.Where(x => x.StartsWith("BIMWRIGHT_DWG_", StringComparison.OrdinalIgnoreCase)).ToArray())
+            foreach (var key in start.Environment.Keys.Where(x => (x.StartsWith("BIMWRIGHT_DWG_", StringComparison.OrdinalIgnoreCase) || x.StartsWith("TBC_ACAD_MCP_", StringComparison.OrdinalIgnoreCase))).ToArray())
                 start.Environment.Remove(key);
             start.Environment["LOCALAPPDATA"] = root;
             process = Process.Start(start);
@@ -183,7 +183,7 @@ public class ArgumentGuardProtocolTests
             await process.StandardInput.FlushAsync();
             var listed = await Request("tools/list", new JObject());
             var runtime = listed["result"]["tools"].OfType<JObject>()
-                .Single(x => x.Value<string>("name") == "dwg_health")["_meta"]["bimwright/dwg-mcp/runtime"];
+                .Single(x => x.Value<string>("name") == "dwg_health")["_meta"]["desarrolloteambimcivil/tbc_mcp_autocad/runtime"];
             Assert.Equal(process.Id, runtime.Value<int>("process_id"));
             Assert.Equal(process.StartTime.ToUniversalTime(), runtime.Value<DateTime>("process_started_utc"));
             Assert.Equal(typeof(Program).Assembly.ManifestModule.ModuleVersionId, Guid.Parse(runtime.Value<string>("module_version_id")));

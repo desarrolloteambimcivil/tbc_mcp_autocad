@@ -135,7 +135,7 @@ public class ResponseBudgetProtocolTests : OutputArtifactTestScope
         Assert.Equal("original-text", Body(reply).Value<string>("status"));
         Assert.Equal("overview界", reply.Result["structuredContent"].Value<string>("view"));
         Assert.Equal("kept", reply.Result["_meta"].Value<string>("fixture"));
-        Assert.NotNull(reply.Result["_meta"]["bimwright/dwg-mcp/response_budget"]);
+        Assert.NotNull(reply.Result["_meta"]["desarrolloteambimcivil/tbc_mcp_autocad/response_budget"]);
         Assert.Equal(1, h.Tools.Calls);
     }
 
@@ -152,7 +152,7 @@ public class ResponseBudgetProtocolTests : OutputArtifactTestScope
         Assert.Equal(config.ResponseBudgetBytesOrDefault - 1, reply.Bytes);
         Assert.Equal(value, Body(reply)["result"].Value<string>("value"));
         Assert.Equal("required-result", reply.Result["_meta"].Value<string>("origin"));
-        Assert.Null(reply.Result["_meta"]["bimwright/dwg-mcp/response_budget"]);
+        Assert.Null(reply.Result["_meta"]["desarrolloteambimcivil/tbc_mcp_autocad/response_budget"]);
         Assert.Null(Body(reply)["_response_budget"]);
         Assert.Equal(1, h.Tools.Calls);
         Assert.False(h.HasFiles);

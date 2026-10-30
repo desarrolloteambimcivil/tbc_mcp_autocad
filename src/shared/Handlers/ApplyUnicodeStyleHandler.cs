@@ -10,7 +10,7 @@ using Newtonsoft.Json.Linq;
 namespace Bimwright.Dwg.Plugin.Handlers
 {
     /// <summary>
-    /// Ensures the "Bimwright_Unicode" text style exists (using Open Sans,
+    /// Ensures the "TBC_Unicode" text style exists (using Open Sans,
     /// downloading the font if necessary), then reassigns target entities to
     /// that style. Targets are either explicit handles (params.handles) or
     /// the current pickfirst selection as fallback. Intended to be called
@@ -25,7 +25,7 @@ namespace Bimwright.Dwg.Plugin.Handlers
     public class ApplyUnicodeStyleHandler : IAcadCommand
     {
         public string Name => "apply_unicode_style";
-        public string Description => "Apply the Bimwright Unicode text style to selected or explicit text entities.";
+        public string Description => "Apply the TBC_Unicode text style to selected or explicit text entities.";
         public CommandSchema Schema => CommandSchemas.ApplyUnicodeStyle;
 
         public CommandResult Execute(Document doc, JToken parameters)

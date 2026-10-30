@@ -194,7 +194,7 @@ public class ReadOnlyTargetProtocolTests
             Selected = new Endpoint(selectedIdentity.Id, selectedIdentity.StartTime.ToUniversalTime());
             using var owner = Process.GetCurrentProcess();
             Other = new Endpoint(owner.Id, owner.StartTime.ToUniversalTime());
-            var profile = Path.Combine(root, "Bimwright", "dwg-mcp");
+            var profile = Path.Combine(root, "NourRouas", "tbc-acad-mcp");
             Directory.CreateDirectory(profile);
             foreach (var endpoint in new[] { Selected, Other })
                 File.WriteAllText(Path.Combine(profile, endpoint.Info.TargetId + ".json"), JsonConvert.SerializeObject(endpoint.Info));
@@ -214,7 +214,7 @@ public class ReadOnlyTargetProtocolTests
             await process.StandardInput.WriteLineAsync("{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}");
             await process.StandardInput.FlushAsync();
             Catalog = (JObject)(await Request("tools/list", new JObject()))["result"];
-            var runtime = Catalog["tools"].Single(tool => tool.Value<string>("name") == "dwg_health")["_meta"]["bimwright/dwg-mcp/runtime"];
+            var runtime = Catalog["tools"].Single(tool => tool.Value<string>("name") == "dwg_health")["_meta"]["desarrolloteambimcivil/tbc_mcp_autocad/runtime"];
             Assert.Equal(process.Id, runtime.Value<int>("process_id"));
             Assert.Equal(process.StartTime.ToUniversalTime(), runtime.Value<DateTime>("process_started_utc"));
             Assert.Equal(typeof(Program).Assembly.ManifestModule.ModuleVersionId, Guid.Parse(runtime.Value<string>("module_version_id")));
@@ -232,7 +232,7 @@ public class ReadOnlyTargetProtocolTests
             start.ArgumentList.Add(typeof(Program).Assembly.Location);
             foreach (var argument in new[] { "--config", Path.Combine(profile, "absent.json"), "--disable-call-log" })
                 start.ArgumentList.Add(argument);
-            foreach (var key in start.Environment.Keys.Where(key => key.StartsWith("BIMWRIGHT_DWG_", StringComparison.OrdinalIgnoreCase)).ToArray())
+            foreach (var key in start.Environment.Keys.Where(key => (key.StartsWith("BIMWRIGHT_DWG_", StringComparison.OrdinalIgnoreCase) || key.StartsWith("TBC_ACAD_MCP_", StringComparison.OrdinalIgnoreCase))).ToArray())
                 start.Environment.Remove(key);
             // This redirects discovery only; logging is explicitly disabled above.
             start.Environment["LOCALAPPDATA"] = profile;

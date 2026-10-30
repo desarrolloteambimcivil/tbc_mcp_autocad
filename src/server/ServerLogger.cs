@@ -7,8 +7,8 @@ namespace Bimwright.Dwg.Server
     internal sealed class ServerLogger
     {
         internal static ServerLogger Default { get; } = new ServerLogger(Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Bimwright", "dwg-mcp", "dwg-mcp-calls.jsonl"));
+            Bimwright.Dwg.Plugin.ProductIdentity.DataRoot(),
+            Bimwright.Dwg.Plugin.ProductIdentity.Name + "-calls.jsonl"));
 
         private readonly CallLogWriter _writer;
 

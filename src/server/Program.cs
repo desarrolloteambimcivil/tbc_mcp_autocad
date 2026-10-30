@@ -55,7 +55,7 @@ namespace Bimwright.Dwg.Server
         {
             if (config != null && config.AllowLanBindOrDefault)
             {
-                return "warning: --allow-lan-bind / BIMWRIGHT_DWG_ALLOW_LAN_BIND is parsed but plugin-side LAN binding is not yet implemented in v1.0; the AutoCAD plugin still listens on loopback only.";
+                return "warning: --allow-lan-bind / TBC_ACAD_MCP_ALLOW_LAN_BIND is parsed but plugin-side LAN binding is not yet implemented in v1.0; the AutoCAD plugin still listens on loopback only.";
             }
 
             return null;
@@ -64,9 +64,9 @@ namespace Bimwright.Dwg.Server
         private static void PrintHelp()
         {
             Console.WriteLine(
-                "dwg-mcp - MCP stdio gateway for Autodesk AutoCAD 2022-2027.\n" +
+                "tbc-acad-mcp - MCP stdio gateway for Autodesk AutoCAD and Civil 3D 2022-2027.\n" +
                 "\n" +
-                "Usage: dwg-mcp [options]\n" +
+                "Usage: tbc-acad-mcp [options]\n" +
                 "\n" +
                 "Options:\n" +
                 "  --target <selector>    AutoCAD year (2022-2027), pid:<PID> or id:acad-<year>-<PID>.\n" +
@@ -87,14 +87,15 @@ namespace Bimwright.Dwg.Server
                 "  --allow-lan-bind       Parsed but not yet implemented (loopback only).\n" +
                 "  --log-level <level>    trace|debug|information|warning|error.\n" +
                 "  --config <path>        JSON config file. Default:\n" +
-                "                         %LOCALAPPDATA%\\Bimwright\\dwg-mcp\\dwgmcp.config.json\n" +
+                "                         %LOCALAPPDATA%\\NourRouas\\tbc-acad-mcp\\dwgmcp.config.json\n" +
                 "\n" +
-                "Environment overrides: BIMWRIGHT_DWG_TARGET, BIMWRIGHT_DWG_TOOLSETS,\n" +
-                "BIMWRIGHT_DWG_READ_ONLY, BIMWRIGHT_DWG_ENABLE_TOOLBAKER,\n" +
-                "BIMWRIGHT_DWG_ENABLE_SEND_CODE, BIMWRIGHT_DWG_ENABLE_CALL_LOG,\n" +
-                "BIMWRIGHT_DWG_ALLOW_LAN_BIND, BIMWRIGHT_DWG_LOG_LEVEL,\n" +
-                "BIMWRIGHT_DWG_RESPONSE_BUDGET_BYTES, BIMWRIGHT_DWG_RESPONSE_WARN_BYTES,\n" +
-                "BIMWRIGHT_DWG_RESPONSE_STRONG_WARN_BYTES.\n" +
+                "Environment overrides: TBC_ACAD_MCP_TARGET, TBC_ACAD_MCP_TOOLSETS,\n" +
+                "TBC_ACAD_MCP_READ_ONLY, TBC_ACAD_MCP_ENABLE_TOOLBAKER,\n" +
+                "TBC_ACAD_MCP_ENABLE_SEND_CODE, TBC_ACAD_MCP_ENABLE_CALL_LOG,\n" +
+                "TBC_ACAD_MCP_ALLOW_LAN_BIND, TBC_ACAD_MCP_LOG_LEVEL,\n" +
+                "TBC_ACAD_MCP_RESPONSE_BUDGET_BYTES, TBC_ACAD_MCP_RESPONSE_WARN_BYTES,\n" +
+                "TBC_ACAD_MCP_RESPONSE_STRONG_WARN_BYTES.\n" +
+                "The legacy BIMWRIGHT_DWG_* names are read when the TBC_ACAD_MCP_* name is not set.\n" +
                 "\n" +
                 "  -h, --help             Show this help and exit.");
         }

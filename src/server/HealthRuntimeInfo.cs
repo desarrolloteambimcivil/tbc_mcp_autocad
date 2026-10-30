@@ -7,7 +7,7 @@ namespace Bimwright.Dwg.Server;
 
 internal static class HealthRuntimeInfo
 {
-    internal const string ClientRuntimeMetadataKey = "bimwright/dwg-mcp/runtime";
+    internal const string ClientRuntimeMetadataKey = Bimwright.Dwg.Plugin.ProductIdentity.MetaKeyPrefix + "runtime";
 
     internal static JObject ClientRuntime(JObject gateway) => new()
     {
@@ -30,7 +30,7 @@ internal static class HealthRuntimeInfo
         health["setup_gateway"] = gateway.DeepClone();
         health["mcp"] = new JObject
         {
-            ["name"] = "dwg-mcp",
+            ["name"] = Bimwright.Dwg.Plugin.ProductIdentity.Name,
             ["server_version"] = serverVersion,
             ["server_informational_version"] = serverInfo,
             ["plugin_version"] = pluginVersion,
@@ -44,7 +44,7 @@ internal static class HealthRuntimeInfo
         health["client_verification"] = new JObject
         {
             ["status"] = "not_observable_by_server",
-            ["expected_server_info"] = new JObject { ["name"] = "dwg-mcp", ["version"] = serverInfo },
+            ["expected_server_info"] = new JObject { ["name"] = Bimwright.Dwg.Plugin.ProductIdentity.Name, ["version"] = serverInfo },
             ["tools_list_metadata_key"] = ClientRuntimeMetadataKey,
             ["expected_runtime"] = ClientRuntime(gateway),
         };
@@ -84,7 +84,7 @@ internal static class HealthRuntimeInfo
             ["mode"] = mode,
             ["automatic_update_supported"] = false,
             ["requires_user_authorization"] = mode == "prepare_update",
-            ["documentation_url"] = "https://github.com/bimwright/dwg-mcp/blob/master/AGENTS.md",
+            ["documentation_url"] = Bimwright.Dwg.Plugin.ProductIdentity.RepositoryUrl + "/blob/master/AGENTS.md",
             ["steps"] = steps,
         };
     }

@@ -3,7 +3,7 @@ namespace Bimwright.Dwg.Server
     internal static class ServerInstructions
     {
         internal const string Text =
-@"dwg-mcp - MCP gateway for Autodesk AutoCAD DWG drawings. Use for current drawing metadata, layers, entity properties, simple line/circle creation, selected AutoCAD text, DBText, MText, SHX/Unicode style repair, Vietnamese translation writeback, clustered note cleanup, and DWG text rewriting.
+@"tbc-acad-mcp - MCP gateway for Autodesk AutoCAD and Civil 3D DWG drawings. Use for current drawing metadata, layers, entity properties, simple line/circle creation, selected AutoCAD text, DBText, MText, SHX/Unicode style repair, Vietnamese translation writeback, clustered note cleanup, and DWG text rewriting.
 
 Subagents use the parent's verified target and never switch or rebind it. If another instance/drawing is needed, report it to the parent. Inspect each host response's _target: it records the observed execution context, not the requested binding or proof of success. Drawing calls observe the locked drawing before the guard/handler; session calls observe the active drawing after the operation. A refused drawing guard can still report the observed changed drawing. Missing _target means no receipt is available; never infer it from the expected target. Treat batch receipts as context, not proof that every step succeeded or affected only that drawing.
 

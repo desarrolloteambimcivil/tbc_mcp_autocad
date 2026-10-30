@@ -7,7 +7,7 @@ namespace Bimwright.Dwg.Tests
     {
         // Constants from UnicodeStyleService (which depends on AutoCAD API,
         // so we reference literals directly here)
-        private const string StyleName = "Bimwright_Unicode";
+        private const string StyleName = "TBC_Unicode";
         private const string FontFileName = "OpenSans-CondensedLight.ttf";
         private const string FontTypeFace = "Open Sans Condensed Light";
 

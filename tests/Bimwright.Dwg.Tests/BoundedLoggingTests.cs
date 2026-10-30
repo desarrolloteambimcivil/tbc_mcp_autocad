@@ -225,7 +225,7 @@ namespace Bimwright.Dwg.Tests
                 for (var i = 0; i < 10; i++) DiagnosticLog.Write("Test", "password=hidden\r\nrepeat", "2027");
                 DiagnosticLog.Write("Long", new string('x', 5000));
                 Assert.True(DiagnosticLog.Flush(5000));
-                var lines = File.ReadAllLines(Path.Combine(root, "Bimwright", "dwg-mcp", "dwg-mcp.log"));
+                var lines = File.ReadAllLines(Path.Combine(root, "NourRouas", "tbc-acad-mcp", "tbc-acad-mcp.log"));
                 Assert.Equal(3, lines.Length);
                 Assert.DoesNotContain("hidden", string.Join("", lines));
                 Assert.Contains(lines, line => line.Contains("[repeated=9]"));
@@ -240,7 +240,7 @@ namespace Bimwright.Dwg.Tests
         {
             InDiagnostics(root =>
             {
-                var path = Path.Combine(root, "Bimwright", "dwg-mcp", "dwg-mcp.log");
+                var path = Path.Combine(root, "NourRouas", "tbc-acad-mcp", "tbc-acad-mcp.log");
                 var before = DiagnosticLog.Dropped;
                 BoundedLogFile.WithLock(path, () =>
                 {
@@ -258,33 +258,37 @@ namespace Bimwright.Dwg.Tests
         }
 
         [Fact]
-        public void Startup_maintenance_preserves_diagnostic_tails_and_only_known_files_in_both_roots()
+        public void Startup_maintenance_preserves_diagnostic_tails_and_only_known_files_in_the_data_root()
         {
             InDiagnostics(root =>
             {
-                foreach (var relative in new[] { "dwg-mcp", "Dwg" })
+                var upstream = Path.Combine(root, "Bimwright", "Dwg", "debug.log");
+                Directory.CreateDirectory(Path.GetDirectoryName(upstream));
+                File.WriteAllText(upstream, new string('x', 100000));
+                foreach (var relative in new[] { "tbc-acad-mcp" })
                 {
-                    var product = Path.Combine(root, "Bimwright", relative);
+                    var product = Path.Combine(root, "NourRouas", relative);
                     Directory.CreateDirectory(product);
                     File.WriteAllText(Path.Combine(product, "debug.log"), new string('x', 100000) + "\nrecent-tail\n");
-                    SetSize(Path.Combine(product, "dwg-mcp-calls.jsonl"), BoundedLogFile.RecordGroupBytes + 1);
+                    SetSize(Path.Combine(product, "tbc-acad-mcp-calls.jsonl"), BoundedLogFile.RecordGroupBytes + 1);
                     File.WriteAllText(Path.Combine(product, "drawing.jsonl"), "preserve");
                     File.WriteAllText(Path.Combine(product, "dwgmcp.config.json"), "config");
                     Directory.CreateDirectory(Path.Combine(product, "baked"));
                     File.WriteAllText(Path.Combine(product, "baked", "bake.db"), "db");
                 }
-                var current = Path.Combine(root, "Bimwright", "dwg-mcp");
-                var diagnostics = Path.Combine(current, "dwg-mcp.log");
+                var current = Path.Combine(root, "NourRouas", "tbc-acad-mcp");
+                var diagnostics = Path.Combine(current, "tbc-acad-mcp.log");
                 File.WriteAllText(diagnostics, new string('x', (int)DiagnosticLog.FileBytes + 100) + "\ncurrent-tail\n");
                 File.WriteAllText(diagnostics + ".1", new string('x', (int)DiagnosticLog.FileBytes + 100) + "\nbackup-tail\n");
                 DiagnosticLog.MaintainLegacyLogs();
                 Assert.True(DiagnosticLog.Flush(10000));
-                foreach (var relative in new[] { "dwg-mcp", "Dwg" })
+                Assert.Equal(100000, new FileInfo(upstream).Length);
+                foreach (var relative in new[] { "tbc-acad-mcp" })
                 {
-                    var product = Path.Combine(root, "Bimwright", relative);
+                    var product = Path.Combine(root, "NourRouas", relative);
                     Assert.InRange(new FileInfo(Path.Combine(product, "debug.log")).Length, 1, 64 * 1024);
                     Assert.Contains("recent-tail", File.ReadAllText(Path.Combine(product, "debug.log")));
-                    Assert.Empty(BoundedLogFile.Files(product, "dwg-mcp-calls"));
+                    Assert.Empty(BoundedLogFile.Files(product, "tbc-acad-mcp-calls"));
                     Assert.Equal("preserve", File.ReadAllText(Path.Combine(product, "drawing.jsonl")));
                     Assert.Equal("config", File.ReadAllText(Path.Combine(product, "dwgmcp.config.json")));
                     Assert.Equal("db", File.ReadAllText(Path.Combine(product, "baked", "bake.db")));
@@ -301,9 +305,9 @@ namespace Bimwright.Dwg.Tests
         {
             InDiagnostics(root =>
             {
-                var product = Path.Combine(root, "Bimwright", "dwg-mcp");
+                var product = Path.Combine(root, "NourRouas", "tbc-acad-mcp");
                 Directory.CreateDirectory(product);
-                var path = Path.Combine(product, "dwg-mcp.log");
+                var path = Path.Combine(product, "tbc-acad-mcp.log");
                 SetSize(path, DiagnosticLog.FileBytes);
                 File.WriteAllText(path + ".1", "old-backup");
                 DiagnosticLog.Write("Rotate", "new-record");
@@ -319,7 +323,7 @@ namespace Bimwright.Dwg.Tests
         {
             InDiagnostics(root =>
             {
-                var path = Path.Combine(root, "Bimwright", "dwg-mcp", "dwg-mcp.log");
+                var path = Path.Combine(root, "NourRouas", "tbc-acad-mcp", "tbc-acad-mcp.log");
                 var secondProfile = Path.Combine(root, "second-profile");
                 BoundedLogFile.WithLock(path, () =>
                 {
