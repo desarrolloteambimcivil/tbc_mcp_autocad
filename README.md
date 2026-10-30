@@ -267,7 +267,7 @@ Visual reading: capture → inspect the image → choose a region → `dwg_inspe
 | `bbox=null` | String containing JSON `{"min":[x,y,z],"max":[x,y,z]}` with finite, ordered WCS bounds |
 | `bbox_mode=null` | `intersects` by default with a box, or `contains`; requires `bbox` |
 | `space=null` | `model` by default, or `layout:<human LayoutName>` matched exactly ignoring case; use profile layout names |
-| `fields=null` | String containing a JSON array; defaults to `handle`, `type`, `layer`. Allowed: `handle`, `type`, `runtime_type`, `layer`, `color_index`, `text`, `position`, `extents`; `handle` is always included |
+| `fields=null` | String containing a JSON array; defaults to `handle`, `type`, `layer`. Allowed: `handle`, `type`, `runtime_type`, `layer`, `color_index`, `text`, `plain_text`, `position`, `extents` (`text` is the stored string of DBText, MText or MLeader; `plain_text` is what the drawing shows, with `%%c` as Ø and MText formatting removed); `handle` is always included |
 | `cursor=null` | Opaque continuation token from the prior page |
 | `max_output_bytes=null` | Final MCP result cap, default 16384 bytes, range 4096–65536; a smaller global response budget still applies |
 

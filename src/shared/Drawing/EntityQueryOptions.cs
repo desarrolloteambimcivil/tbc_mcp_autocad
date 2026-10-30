@@ -13,7 +13,7 @@ namespace Bimwright.Dwg.Plugin
     public sealed class EntityQueryOptions
     {
         public const int DefaultMaxOutputBytes = 16384;
-        public static IReadOnlyList<string> AllowedFields { get; } = Array.AsReadOnly(new[] { "handle", "type", "runtime_type", "layer", "color_index", "text", "position", "extents" });
+        public static IReadOnlyList<string> AllowedFields { get; } = Array.AsReadOnly(new[] { "handle", "type", "runtime_type", "layer", "color_index", "text", "plain_text", "position", "extents" });
         private static readonly string[] ExtensionKeys = { "bbox", "bbox_mode", "space", "fields", "cursor", "max_output_bytes" };
         public string EntityType { get; private set; }
         public string Layer { get; private set; }

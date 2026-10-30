@@ -213,7 +213,7 @@ reconnect 後、同じ接続の新しい initialize と `tools/list` の `_meta[
 | `bbox=null` | 有限でmin ≤ maxのWCS座標を含むJSON文字列 `{"min":[x,y,z],"max":[x,y,z]}` |
 | `bbox_mode=null` | box指定時は既定 `intersects`、または `contains`。`bbox` が必要 |
 | `space=null` | 既定 `model`、または `layout:<表示LayoutName>` を大文字小文字を区別せず完全一致。profileの名前を使用 |
-| `fields=null` | JSON配列文字列。既定 `handle`、`type`、`layer`。許可項目は `handle`、`type`、`runtime_type`、`layer`、`color_index`、`text`、`position`、`extents`。`handle` は常に含む |
+| `fields=null` | JSON配列文字列。既定 `handle`、`type`、`layer`。許可項目は `handle`、`type`、`runtime_type`、`layer`、`color_index`、`text`、`plain_text`、`position`、`extents`（`text` は DBText・MText・MLeader の保存文字列、`plain_text` は図面上の表示どおりの文字列で `%%c` を Ø に変換し MText の書式を除去）。`handle` は常に含む |
 | `cursor=null` | 前のページから受け取る継続トークン |
 | `max_output_bytes=null` | 最終MCP結果の上限。既定16384バイト、4096–65536。小さいグローバルbudgetも適用 |
 

@@ -213,7 +213,7 @@ reconnect 后，在同一连接上将新的 initialize 与 `tools/list` 的 `_me
 | `bbox=null` | JSON字符串 `{"min":[x,y,z],"max":[x,y,z]}`，WCS坐标有限且min ≤ max |
 | `bbox_mode=null` | 有box时默认 `intersects`，或 `contains`；必须提供 `bbox` |
 | `space=null` | 默认 `model`，或 `layout:<人类可读LayoutName>`，忽略大小写的精确匹配；使用profile中的布局名 |
-| `fields=null` | JSON数组字符串，默认 `handle`、`type`、`layer`。仅允许 `handle`、`type`、`runtime_type`、`layer`、`color_index`、`text`、`position`、`extents`；始终包含 `handle` |
+| `fields=null` | JSON数组字符串，默认 `handle`、`type`、`layer`。仅允许 `handle`、`type`、`runtime_type`、`layer`、`color_index`、`text`、`plain_text`、`position`、`extents`（`text` 为 DBText、MText 或 MLeader 的存储字符串；`plain_text` 为图纸上显示的文字，`%%c` 转为 Ø 并去除 MText 格式）；始终包含 `handle` |
 | `cursor=null` | 上一页返回的续页token |
 | `max_output_bytes=null` | 最终MCP结果上限，默认16384字节，范围4096–65536；更小的全局budget仍适用 |
 

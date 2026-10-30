@@ -32,11 +32,19 @@ namespace Bimwright.Dwg.Plugin.Cad
                         case "text":
                             if (entity is DBText text) value = text.TextString;
                             else if (entity is MText mtext) value = mtext.Contents;
+                            else if (entity is MLeader leader) value = LeaderContents(leader);
+                            else { Missing(result, unavailable, reasons, field, "not_supported_for_type"); continue; }
+                            break;
+                        case "plain_text":
+                            if (entity is DBText plainText) value = CadTextDecoder.Plain(plainText.TextString);
+                            else if (entity is MText plainMtext) value = CadTextDecoder.PlainMText(plainMtext.Contents);
+                            else if (entity is MLeader plainLeader) value = CadTextDecoder.PlainMText(LeaderContents(plainLeader));
                             else { Missing(result, unavailable, reasons, field, "not_supported_for_type"); continue; }
                             break;
                         case "position":
                             if (entity is DBText positionedText) value = Point(positionedText.Position);
                             else if (entity is MText positionedMtext) value = Point(positionedMtext.Location);
+                            else if (entity is MLeader positionedLeader) value = LeaderTextLocation(positionedLeader);
                             else if (entity is BlockReference block) value = Point(block.Position);
                             else { Missing(result, unavailable, reasons, field, "not_supported_for_type"); continue; }
                             break;
@@ -84,6 +92,22 @@ namespace Bimwright.Dwg.Plugin.Cad
                     && min.X <= max.X && min.Y <= max.Y && min.Z <= max.Z;
             }
             catch { return false; }
+        }
+
+        // MLeader.MText returns a copy that must be disposed.
+        private static string LeaderContents(MLeader leader)
+        {
+            var mtext = leader.MText;
+            try { return mtext?.Contents; }
+            finally { mtext?.Dispose(); }
+        }
+
+        // Where the leader's text sits, not the arrow tip.
+        private static JObject LeaderTextLocation(MLeader leader)
+        {
+            var mtext = leader.MText;
+            try { return mtext == null ? null : Point(mtext.Location); }
+            finally { mtext?.Dispose(); }
         }
 
         private static JObject Point(Point3d point)

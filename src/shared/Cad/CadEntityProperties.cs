@@ -133,6 +133,7 @@ namespace Bimwright.Dwg.Plugin.Cad
         private static void DescribeDbText(IDictionary<string, object> result, DBText text)
         {
             result["text"] = text.TextString;
+            result["plain_text"] = CadTextDecoder.Plain(text.TextString);
             result["position"] = Point(text.Position);
             result["height"] = text.Height;
             result["rotation"] = text.Rotation;
@@ -143,6 +144,7 @@ namespace Bimwright.Dwg.Plugin.Cad
         private static void DescribeMText(IDictionary<string, object> result, MText mText)
         {
             result["text"] = mText.Contents;
+            result["plain_text"] = CadTextDecoder.PlainMText(mText.Contents);
             result["location"] = Point(mText.Location);
             result["text_height"] = mText.TextHeight;
             result["width"] = mText.Width;
@@ -156,6 +158,7 @@ namespace Bimwright.Dwg.Plugin.Cad
             try
             {
                 result["text"] = mText != null ? mText.Contents : string.Empty;
+                result["plain_text"] = mText != null ? CadTextDecoder.PlainMText(mText.Contents) : string.Empty;
             }
             finally
             {

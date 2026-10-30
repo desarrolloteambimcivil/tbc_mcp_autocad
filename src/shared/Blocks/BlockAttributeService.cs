@@ -63,6 +63,7 @@ namespace Bimwright.Dwg.Plugin.Blocks
                 {
                     tag = attribute.Tag,
                     value = attribute.TextString,
+                    plain_value = attribute.IsMTextAttribute ? Cad.CadTextDecoder.PlainMText(attribute.TextString) : Cad.CadTextDecoder.Plain(attribute.TextString),
                     handle = attribute.Handle.ToString()
                 });
             }

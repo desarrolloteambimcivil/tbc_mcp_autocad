@@ -211,7 +211,7 @@ Theo `output.next_calls` để phân trang `types`, `layers` hoặc `spaces`; m�
 | `bbox=null` | Chuỗi JSON `{"min":[x,y,z],"max":[x,y,z]}` với tọa độ WCS hữu hạn, min ≤ max |
 | `bbox_mode=null` | `intersects` mặc định khi có box, hoặc `contains`; cần `bbox` |
 | `space=null` | Mặc định `model`, hoặc `layout:<tên LayoutName hiển thị>` khớp chính xác không phân biệt hoa thường; lấy tên từ profile |
-| `fields=null` | Chuỗi mảng JSON; mặc định `handle`, `type`, `layer`. Chỉ nhận `handle`, `type`, `runtime_type`, `layer`, `color_index`, `text`, `position`, `extents`; luôn có `handle` |
+| `fields=null` | Chuỗi mảng JSON; mặc định `handle`, `type`, `layer`. Chỉ nhận `handle`, `type`, `runtime_type`, `layer`, `color_index`, `text`, `plain_text`, `position`, `extents` (`text` là chuỗi lưu trữ của DBText, MText hoặc MLeader; `plain_text` là nội dung hiển thị, `%%c` thành Ø và bỏ định dạng MText); luôn có `handle` |
 | `cursor=null` | Token tiếp trang từ kết quả trước |
 | `max_output_bytes=null` | Giới hạn MCP result cuối, mặc định 16384 byte, khoảng 4096–65536; global budget nhỏ hơn vẫn áp dụng |
 

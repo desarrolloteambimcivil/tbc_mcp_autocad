@@ -80,6 +80,7 @@
     <Compile Include="..\..\src\shared\Cad\CadEntityProperties.cs" LinkBase="Shared\Cad" />
     <Compile Include="..\..\src\shared\Cad\CadEntityPageService.cs" LinkBase="Shared\Cad" />
     <Compile Include="..\..\src\shared\Cad\CadEntityProjection.cs" LinkBase="Shared\Cad" />
+    <Compile Include="..\..\src\shared\Cad\CadTextDecoder.cs" LinkBase="Shared\Cad" />
     <Compile Include="..\..\src\shared\Cad\CadTextReadService.cs" LinkBase="Shared\Cad" />
     <Compile Include="..\..\src\shared\Handlers\QueryEntitiesHandler.cs" LinkBase="Shared\Handlers" />
     <Compile Include="..\..\src\shared\Handlers\CountEntitiesHandler.cs" LinkBase="Shared\Handlers" />

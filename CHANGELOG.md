@@ -13,6 +13,12 @@ First changes of the fork of [bimwright/dwg-mcp](https://github.com/bimwright/dw
 - MCP `_meta` keys use the `desarrolloteambimcivil/tbc_mcp_autocad/` prefix.
 - Source namespaces and project file names (`Bimwright.Dwg.*`), tool names (`dwg_*`), AutoCAD commands and discovery file names are unchanged.
 
+### Readable texts
+
+- `dwg_query_entities` reads MLeader text: `text` returns its stored string and `position` its text location.
+- New optional field `plain_text` gives what the drawing shows: `%%c` as Ø, `%%d` as °, `%%p` as ±, `%%nnn` and `\U+XXXX` decoded, MText formatting removed and paragraphs as new lines. `text` stays the stored string, which rewrites keep using.
+- `dwg_get_entity_properties` adds `plain_text` for DBText, MText and MLeader, and `dwg_get_block_attributes` adds `plain_value` to each attribute.
+
 ### Civil 3D
 
 - The bundle declares `Platform="AutoCAD*"`, so Civil 3D and other AutoCAD-based products load the plugin. With `Platform="AutoCAD"` Civil 3D 2025 skipped the bundle.

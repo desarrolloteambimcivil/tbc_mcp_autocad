@@ -103,7 +103,7 @@ namespace Bimwright.Dwg.Server.Tools
             [Description("Optional JSON object {min:[x,y,z],max:[x,y,z]}, finite ordered WCS drawing-unit bounds.")] string bbox = null,
             [Description("intersects (default with bbox) or contains; closed AABB boundaries. Requires bbox.")] string bbox_mode = null,
             [Description("model (default) or layout:<exact human layout name>, case-insensitive. Top-level entities only; no block/xref expansion.")] string space = null,
-            [Description("JSON array from handle,type,runtime_type,layer,color_index,text,position,extents. Default handle/type/layer; handle always included. Unsupported field values are null with unavailable_fields.")] string fields = null,
+            [Description("JSON array from handle,type,runtime_type,layer,color_index,text,plain_text,position,extents. Default handle/type/layer; handle always included. text is the stored string (DBText, MText, MLeader); plain_text is what the drawing shows (%%c as Ø, MText formatting removed, paragraphs as newlines); MLeader position is its text location. Unsupported field values are null with unavailable_fields.")] string fields = null,
             [Description("Opaque cursor from output.next_calls. Echo the same matching/field options; changed snapshots refuse continuation.")] string cursor = null,
             [Description("Paged final MCP byte cap, default 16384, range4096..65536; lower global cap still applies.")] int? max_output_bytes = null)
         {
