@@ -26,8 +26,8 @@ internal sealed class ToastPreview : Window
     private int _identityIndex;
     private readonly string[] _identities =
     {
-        "dwg-mcp 2024",
-        "dwg-mcp 2022",
+        "tbc-acad-mcp 2024",
+        "tbc-acad-mcp 2022",
         null
     };
     private readonly (string Name, bool Capture)[] _commands =
@@ -49,7 +49,7 @@ internal sealed class ToastPreview : Window
             instanceIdentity: () => _identities[_identityIndex],
             motionEnabled: () => true,
             onClick: _ => OpenHistory());
-        Title = "DWG-MCP — production toast preview (simulated results)";
+        Title = "tbc-acad-mcp — production toast preview (simulated results)";
         Width = 620; Height = 535; Left = 450; Top = 130;
         WindowStartupLocation = WindowStartupLocation.Manual;
         FontFamily = McpToastTheme.UiFont;
@@ -69,7 +69,7 @@ internal sealed class ToastPreview : Window
         AddButton(actions, "Status card", () =>
         {
             Reset();
-            _activity.ShowStatus("Agent connected", "dwg-mcp is ready (simulated)", 60);
+            _activity.ShowStatus("Agent connected", "tbc-acad-mcp is ready (simulated)", 60);
             _manager.Render(); PositionCard();
         });
         AddButton(actions, "Instance", () =>

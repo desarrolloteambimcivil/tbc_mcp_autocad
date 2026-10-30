@@ -82,7 +82,7 @@ internal static class HistoryDetailsVisualTests
         var entry = history.Snapshot()[0];
         string copied = null;
         var failCopy = false;
-        var window = new HistoryWindow(history, "dwg-mcp 2024", value =>
+        var window = new HistoryWindow(history, "tbc-acad-mcp 2024", value =>
         {
             if (failCopy) throw new COMException("Fixture clipboard unavailable");
             copied = value;

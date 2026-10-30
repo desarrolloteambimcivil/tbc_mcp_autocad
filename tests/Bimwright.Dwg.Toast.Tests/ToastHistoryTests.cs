@@ -70,7 +70,7 @@ internal static class ToastHistoryTests
         var history = new ActivityHistory();
         history.Record(ToastContentBuilder.BuildCompleted("list_layers", "{\"count\":2}", true, null, null, 10));
         history.Record(ToastContentBuilder.BuildCompleted("create_line", null, false, "compile error", null, 20));
-        var window = new HistoryWindow(history, "dwg-mcp 2024");
+        var window = new HistoryWindow(history, "tbc-acad-mcp 2024");
         try
         {
             window.Show();
@@ -78,7 +78,7 @@ internal static class ToastHistoryTests
             var search = Field<TextBox>(window, "_search");
             var status = Field<ComboBox>(window, "_status");
             var kind = Field<ComboBox>(window, "_kind");
-            if (!window.Title.Contains("dwg-mcp 2024") || grid.Columns.Count != 6 || grid.Items.Count != 2)
+            if (!window.Title.Contains("tbc-acad-mcp 2024") || grid.Columns.Count != 6 || grid.Items.Count != 2)
                 throw new Exception("History must show the instance identity and RVT-style outcome table.");
             grid.SelectedIndex = 0;
             if (!Field<TextBox>(window, "_what").Text.Contains("compile error")

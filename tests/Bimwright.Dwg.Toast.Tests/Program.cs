@@ -166,7 +166,7 @@ internal static class Program
                 var hasProductHeader = false;
                 foreach (var child in header.Children)
                 {
-                    if (child is TextBlock text && text.Text == "dwg-mcp")
+                    if (child is TextBlock text && text.Text == "tbc-acad-mcp")
                     {
                         hasProductHeader = true;
                         break;
@@ -248,13 +248,13 @@ internal static class Program
             if (window == null)
                 throw new Exception("The activity card was not created.");
             var footer = BrandRow(window);
-            if (TitleText(window) != "dwg-mcp" || ToolText(window) != "List Rooms"
+            if (TitleText(window) != "tbc-acad-mcp" || ToolText(window) != "List Rooms"
                 || footer.Visibility != Visibility.Collapsed)
                 throw new Exception("A card opened with branding off must omit the wordmark row.");
             show = true;
             manager.ApplyShowBranding();
             Pump();
-            if (TitleText(window) != "dwg-mcp" || ToolText(window) != "List Rooms"
+            if (TitleText(window) != "tbc-acad-mcp" || ToolText(window) != "List Rooms"
                 || footer.Visibility != Visibility.Hidden)
                 throw new Exception("Turning branding on must reserve a blank brand row and leave the text alone.");
         }
@@ -267,16 +267,16 @@ internal static class Program
         var snapshot = new ActivitySnapshot(1, false, 1, 0, 0, "List Rooms", "Done", true, false);
 
         var window = new McpToastWindow(snapshot, null, null, null, null, null,
-            instanceIdentity: "dwg-mcp 2027");
+            instanceIdentity: "tbc-acad-mcp 2027");
         try
         {
-            if (TitleText(window) != "dwg-mcp 2027" || ToolText(window) != "List Rooms")
+            if (TitleText(window) != "tbc-acad-mcp 2027" || ToolText(window) != "List Rooms")
                 throw new Exception("The title must carry the supplied instance identity above the tool.");
             window.SetShowBranding(false);
-            if (TitleText(window) != "dwg-mcp 2027" || BrandRow(window).Visibility != Visibility.Collapsed)
+            if (TitleText(window) != "tbc-acad-mcp 2027" || BrandRow(window).Visibility != Visibility.Collapsed)
                 throw new Exception("Turning branding off must keep the title and collapse the wordmark row.");
             window.SetShowBranding(true);
-            if (TitleText(window) != "dwg-mcp 2027" || BrandRow(window).Visibility != Visibility.Hidden)
+            if (TitleText(window) != "tbc-acad-mcp 2027" || BrandRow(window).Visibility != Visibility.Hidden)
                 throw new Exception("Turning branding on must keep the title and reserve the wordmark row.");
         }
         finally { window.CloseImmediate(); }
@@ -284,7 +284,7 @@ internal static class Program
         var plain = new McpToastWindow(snapshot, null, null, null, null, null);
         try
         {
-            if (TitleText(plain) != "dwg-mcp")
+            if (TitleText(plain) != "tbc-acad-mcp")
                 throw new Exception("A card without identity must fall back to the product name.");
         }
         finally { plain.CloseImmediate(); }
@@ -479,7 +479,7 @@ internal static class Program
             onClick: cardId => clicked = cardId);
         try
         {
-            if (!aggregator.ShowStatus("Agent connected", "dwg-mcp is ready", 6))
+            if (!aggregator.ShowStatus("Agent connected", "tbc-acad-mcp is ready", 6))
                 throw new Exception("The status card did not request a render.");
             manager.Render();
             Pump();
@@ -500,7 +500,7 @@ internal static class Program
             if (Current(manager) != null)
                 throw new Exception("Clicking the × control did not dismiss the status card.");
 
-            if (!aggregator.ShowStatus("Agent connected", "dwg-mcp is ready", 6))
+            if (!aggregator.ShowStatus("Agent connected", "tbc-acad-mcp is ready", 6))
                 throw new Exception("The status card could not be recreated for the click test.");
             manager.Render();
             Pump();
