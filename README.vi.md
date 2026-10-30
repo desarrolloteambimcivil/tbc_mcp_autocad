@@ -131,7 +131,7 @@ Bấm thân thẻ mở/focus **History** rồi đóng thẻ; × chỉ đóng; b�
 
 ---
 
-## Health runtime và kiểm tra cập nhật (Unreleased)
+## Health runtime và kiểm tra cập nhật (v2.1.1)
 
 `dwg_health()` mặc định offline, read-only. Đầu phiên, chọn đúng target rồi gọi `dwg_health(check_updates=true)` một lần; các probe thường về sau vẫn offline. Tool báo trạng thái host/drawing, version/build server và plugin đang nạp, cùng alignment; không cần hoặc lock drawing. Không có target vẫn giữ identity gateway với `ok:false`, `host_connected:false`. Plugin cũ trả `HEALTH_UNSUPPORTED` chỉ chứng minh có phản hồi, chưa xác minh được health/identity. UI bận giữ identity plugin nhưng document state chưa quan sát được. Health không lên toast và không chạy trong drawing batch.
 
@@ -139,11 +139,11 @@ SHA-256 chỉ quan sát file trên disk lúc capture, không chứng minh memory
 
 Đọc cả `update.components`, thông báo đầy đủ, `lookup_reason`, `protected_component_reasons` và `unobserved_components`. `UPDATE_CHECK_UNAVAILABLE` là lookup bên ngoài thất bại, không phải lỗi runtime hay lý do xin phép cài; `LOCAL_VERSION_AHEAD` chỉ thông báo bản local mới hơn, không downgrade. Chỉ mode `prepare_update` cùng `bundle_update_proposal_allowed=true` cho phép đề xuất update, và vẫn cần quyền cài đặt. Các mode khác chỉ check/report/review. Health không tự cài, tải package, sửa config client, save/close drawing hay restart process. Xem [hướng dẫn agent](AGENTS.md).
 
-Sau reconnect, đối chiếu initialize và `tools/list` mới trên cùng connection với `client_verification`, gồm `_meta["desarrolloteambimcivil/tbc_mcp_autocad/runtime"]`, schema và annotations. Server không thể tự chứng minh client đã refresh cache. Health vẫn có trong read-only; `openWorldHint=true` vì tùy chọn GitHub. Đây là source Unreleased, chưa có trong v2.0.1 đã phát hành. Đã kiểm tra giao thức host-free và build plugin 2024/2027; nghiệm thu trên AutoCAD đang chạy còn pending.
+Sau reconnect, đối chiếu initialize và `tools/list` mới trên cùng connection với `client_verification`, gồm `_meta["desarrolloteambimcivil/tbc_mcp_autocad/runtime"]`, schema và annotations. Server không thể tự chứng minh client đã refresh cache. Health vẫn có trong read-only; `openWorldHint=true` vì tùy chọn GitHub. Có từ v2.1.1; cập nhật gateway và plugin từ cùng release. CI đã build đủ sáu plugin AutoCAD 2022–2027; xem release notes để biết phạm vi kiểm chứng.
 
 ## Công cụ
 
-Bản development mặc định expose 45 tool: query (gồm `dwg_get_drawing_profile` và `dwg_inspect_lisp`), modify, meta (gồm `dwg_send_code`/`dwg_run_lisp`), view, và `dwg_capture_view_image` mặc định bật. Các toolset tùy chọn ToolBaker, annotation, block, dimension, export, và drawing được kích hoạt qua `--toolsets`, nâng tổng diện tích bề mặt MCP lên 69 tool. Số tool đăng ký có tính `dwg_run_lisp`, hiện chỉ trả từ chối; không verdict nào cấp quyền thực thi.
+Bản 2.1.1 mặc định expose 45 tool: query (gồm `dwg_get_drawing_profile` và `dwg_inspect_lisp`), modify, meta (gồm `dwg_send_code`/`dwg_run_lisp`), view, và `dwg_capture_view_image` mặc định bật. Các toolset tùy chọn ToolBaker, annotation, block, dimension, export, và drawing được kích hoạt qua `--toolsets`, nâng tổng diện tích bề mặt MCP lên 69 tool. Số tool đăng ký có tính `dwg_run_lisp`, hiện chỉ trả từ chối; không verdict nào cấp quyền thực thi.
 
 CAD tool chạy trên active document hiện tại của AutoCAD target đang chọn. Entity input và entity id trả về dùng AutoCAD hex handle, ví dụ `7F5AD`, do tool selection, creation, hoặc properties trả về. Creation, copy, offset, và modify response identify entity tạo/sửa bằng hex handle.
 
@@ -201,7 +201,7 @@ Theo `output.next_calls` để phân trang `types`, `layers` hoặc `spaces`; m�
 | `dwg_inspect_view_region` | Chọn vùng 0–1 trên ảnh nguồn; zoom, regenerate và trả ảnh mới trực tiếp qua MCP, có liên kết ảnh cha |
 | `dwg_restore_view` | Quay lại camera của ảnh trước và nhận ảnh chụp mới |
 
-Đọc bản vẽ: chụp → xem ảnh → chọn vùng → `dwg_inspect_view_region` → xem chi tiết. Giữ ID ảnh cha và dùng `dwg_restore_view` để quay lại tổng thể. Lịch sử giữ tối đa 64 ảnh / 30 phút trong tiến trình AutoCAD. Bản đầu hỗ trợ một viewport model space, nhìn từ trên xuống, không xoay, trực giao; từ chối nguồn cũ hoặc view ngoài phạm vi. Capture trả thêm image block MCP (tối đa 8 MiB) cạnh JSON hiện có. Các tool thay đổi camera và ghi ảnh, và không dùng được trong `--read-only`; không sửa geometry hay lưu DWG. Kiểm chứng trên host đã cài vẫn pending. Xem quy trình mô tả ở trên.
+Đọc bản vẽ: chụp → xem ảnh → chọn vùng → `dwg_inspect_view_region` → xem chi tiết. Giữ ID ảnh cha và dùng `dwg_restore_view` để quay lại tổng thể. Lịch sử giữ tối đa 64 ảnh / 30 phút trong tiến trình AutoCAD. Bản đầu hỗ trợ một viewport model space, nhìn từ trên xuống, không xoay, trực giao; từ chối nguồn cũ hoặc view ngoài phạm vi. Capture trả thêm image block MCP (tối đa 8 MiB) cạnh JSON hiện có. Các tool thay đổi camera và ghi ảnh, và không dùng được trong `--read-only`; không sửa geometry hay lưu DWG. Xem release notes để biết phạm vi kiểm chứng và quy trình mô tả ở trên.
 
 **Đọc entity theo vùng và phân trang** mở rộng `dwg_query_entities` và `dwg_count_entities`, không thêm MCP tool. Cung cấp `bbox`, `bbox_mode`, `space`, `fields`, `cursor` hoặc `max_output_bytes` sẽ bật phân trang; dùng `paged=true` nếu muốn phân trang không lọc. Chỉ có `paged=false` thì vẫn giữ hành vi cũ. Năm tham số query cũ vẫn đứng đầu. Không kết hợp `include_geometry=true` với tùy chọn mới; dùng `fields` để chọn dữ liệu.
 

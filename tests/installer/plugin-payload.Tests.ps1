@@ -54,9 +54,11 @@ try {
             New-Item -ItemType Directory -Path $payload -Force | Out-Null
             $restore = & dotnet restore $project --verbosity quiet 2>&1 | Out-String
             Assert ($LASTEXITCODE -eq 0) "Restore failed: $restore"
+            # PrepareForBuild creates the intermediate directory that the copy marker needs, as
+            # in a real build; keeping it in the case directory makes a fresh checkout pass.
             $output = & dotnet msbuild $project -nologo -verbosity:quiet `
-                '-target:ResolveLockFileCopyLocalFiles;_CopyFilesMarkedCopyLocal' `
-                '-p:Configuration=Release' "-p:OutDir=$payload\" `
+                '-target:PrepareForBuild;ResolveLockFileCopyLocalFiles;_CopyFilesMarkedCopyLocal' `
+                '-p:Configuration=Release' "-p:OutDir=$payload\" "-p:IntermediateOutputPath=$caseDir\obj\" `
                 "-p:ProjectAssetsCacheFile=$caseDir/assets.cache" `
                 '-getProperty:CopyLocalLockFileAssemblies,EnableDynamicLoading' 2>&1 | Out-String
             Assert ($LASTEXITCODE -eq 0) "Dependency copy failed: $output"
@@ -126,3 +128,5 @@ finally {
     Write-Host "Fixtures: $testRoot"
 }
 if (@($results | Where-Object { -not $_.passed }).Count) { exit 1 }
+# Exit from the results alone; GitHub's PowerShell steps otherwise return the last native exit code.
+exit 0

@@ -133,7 +133,7 @@
 
 ---
 
-## Health 与更新检查（Unreleased）
+## Health 与更新检查（v2.1.1）
 
 `dwg_health()` 默认离线、只读。每次会话先选择目标，再调用一次 `dwg_health(check_updates=true)`；后续常规探测保持离线。它不要求或锁定图纸，返回 host/document 状态及已加载 server/plugin 的 version/build/alignment。无目标时仍保留 gateway identity。旧插件的 `HEALTH_UNSUPPORTED` 或缺失 identity 表示未验证，不表示损坏；UI 忙时仍保留 plugin identity。health 不触发操作 toast，也不在 drawing batch 中运行。
 
@@ -141,11 +141,11 @@ GitHub 检查将两个 component 与同一 stable release/tag 比较，共享 5 
 
 检查两个 `update.components`、完整通知、`lookup_reason`、`protected_component_reasons` 和 `unobserved_components`。`UPDATE_CHECK_UNAVAILABLE` 是外部 lookup 失败，不是 runtime 故障或安装授权请求；`LOCAL_VERSION_AHEAD` 仅是信息，不得降级。只有 `prepare_update` 且 `bundle_update_proposal_allowed=true` 才能提出更新，安装仍需授权。health 不下载 package、安装、修改 client config、保存/关闭图纸或重启进程。
 
-reconnect 后，在同一连接上将新的 initialize 与 `tools/list` 的 `_meta["desarrolloteambimcivil/tbc_mcp_autocad/runtime"]`、schema、annotations 对照 `client_verification`；server 无法证明 client cache 已刷新。read-only 下仍可用，因 GitHub 选项而设置 `openWorldHint=true`。参见 [agent guide](AGENTS.md)。已发布 v2.0.1 不包含此功能。host-free protocol 和 2024/2027 plugin build 已验证，实际 AutoCAD 验收待完成。
+reconnect 后，在同一连接上将新的 initialize 与 `tools/list` 的 `_meta["desarrolloteambimcivil/tbc_mcp_autocad/runtime"]`、schema、annotations 对照 `client_verification`；server 无法证明 client cache 已刷新。read-only 下仍可用，因 GitHub 选项而设置 `openWorldHint=true`。参见 [agent guide](AGENTS.md)。此功能从 v2.1.1 起提供；请从同一发行版更新 gateway 和 plugin。CI 已构建 AutoCAD 2022–2027 的全部六个插件；验证范围请参阅发行说明。
 
 ## Tools
 
-development 默认启动暴露 45 个工具：query（含 `dwg_get_drawing_profile` 和 `dwg_inspect_lisp`）、modify、meta（含 `dwg_send_code`/`dwg_run_lisp`）、view 和默认启用的 `dwg_capture_view_image`。可选 ToolBaker、annotation、block、dimension、export 和 drawing 工具集，通过 `--toolsets` 启用，把后端可用的 MCP surface 扩充到 69 个工具。 注册数量包含仅返回拒绝的 `dwg_run_lisp`；任何扫描判定都不授权执行。
+2.1.1 默认启动暴露 45 个工具：query（含 `dwg_get_drawing_profile` 和 `dwg_inspect_lisp`）、modify、meta（含 `dwg_send_code`/`dwg_run_lisp`）、view 和默认启用的 `dwg_capture_view_image`。可选 ToolBaker、annotation、block、dimension、export 和 drawing 工具集，通过 `--toolsets` 启用，把后端可用的 MCP surface 扩充到 69 个工具。 注册数量包含仅返回拒绝的 `dwg_run_lisp`；任何扫描判定都不授权执行。
 
 通用 CAD 工具作用于所选 AutoCAD 目标中的当前活动文档。实体输入与返回的实体 ID 使用 AutoCAD 十六进制 handle，例如 `7F5AD`，由选择、创建或属性工具返回。创建、复制、偏移和修改操作的响应会用十六进制 handle 标识所生成或修改的实体。
 
