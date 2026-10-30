@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 # Shared by repo installation, Setup packaging and installed-file verification.
 function Assert-PluginPayload([string]$PayloadDir, [int]$Year) {
-    $pluginName = 'Bimwright.Dwg.Plugin.Acad{0:D2}' -f ($Year - 2000)
+    $pluginName = 'TbcAcadMcp.Plugin.Acad{0:D2}' -f ($Year - 2000)
     $required = @("$pluginName.dll", 'Microsoft.CodeAnalysis.dll', 'Microsoft.CodeAnalysis.CSharp.dll',
         'Microsoft.CodeAnalysis.Scripting.dll', 'Microsoft.CodeAnalysis.CSharp.Scripting.dll', 'Newtonsoft.Json.dll')
     if ($Year -le 2024) {

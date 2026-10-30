@@ -1,27 +1,32 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Install, update or uninstall the dwg-mcp AutoCAD plugin bundle and MCP server.
+  Install, update or uninstall the tbc-acad-mcp AutoCAD plugin bundle and MCP server.
 
 .DESCRIPTION
+  tbc-acad-mcp is a fork of bimwright/dwg-mcp (Apache-2.0). This installer
+  manages only tbc-acad-mcp files: an upstream dwg-mcp install (its
+  Bimwright.Dwg.bundle, %LOCALAPPDATA%\Bimwright\dwg-mcp\ and its client
+  entries) is a different product and is never changed, moved or removed.
+
   In a client setup ZIP, this script installs:
     - the plugin bundle (bundle/) into
-      %APPDATA%\Autodesk\ApplicationPlugins\Bimwright.Dwg.bundle for every
+      %APPDATA%\Autodesk\ApplicationPlugins\TbcAcadMcp.bundle for every
       installed AutoCAD 2022-2027 that the package ships (a year counts when
       its acad.exe exists and the package has a Contents\<year> payload)
     - the self-contained MCP server from server/ at the fixed path
-      %LOCALAPPDATA%\Bimwright\dwg-mcp\server\current\dwg-mcp.exe
-    - a default %LOCALAPPDATA%\Bimwright\dwg-mcp\dwgmcp.config.json with
+      %LOCALAPPDATA%\NourRouas\tbc-acad-mcp\server\current\tbc-acad-mcp.exe
+    - a default %LOCALAPPDATA%\NourRouas\tbc-acad-mcp\dwgmcp.config.json with
       toolsets=["all"] (skipped when the file already sets toolsets)
 
   It then wires every detected MCP client (-Client <names> limits this,
   -Client none skips it). Config edits are minimal text edits (JSONC comments
-  survive) with a <config>.bak backup first; custom launchers and legacy
-  bimwright-dwg* entries are reported but never replaced. Updating keeps the
-  server path, so wired clients only need a restart.
+  survive) with a <config>.bak backup first; custom launchers are reported
+  but never replaced. Updating keeps the server path, so wired clients only
+  need a restart.
 
   Every replacement is recorded and rolled back on error. Other bundles
-  carrying dwg-mcp's ProductCode (Bimwright-era copies) are removed; a
+  carrying tbc-acad-mcp's ProductCode (stray copies) are removed; a
   machine-wide copy under %ProgramData% blocks the install. The installed
   bundle is verified against the package and the server is started once
   with --help.
@@ -34,7 +39,7 @@
   when bundle/ or server/ exists beside this script.
 
 .PARAMETER Uninstall
-  Remove the Bimwright.Dwg plugin bundle (and stale bundles with the same
+  Remove the TbcAcadMcp plugin bundle (and stale bundles with the same
   ProductCode). The server and user data stay; use uninstall-all.ps1 for a
   full removal.
 
@@ -43,7 +48,7 @@
   (same as 'auto'/'all'). A comma list of client names (claude, codex,
   cursor, vscode, ...) wires only those; 'none' leaves client configs
   untouched. Every edit is previewed under -WhatIf and backed up to
-  <config>.bak first. With -Uninstall, removes the dwg-mcp entry from the
+  <config>.bak first. With -Uninstall, removes the tbc-acad-mcp entry from the
   named clients; without -Client, uninstall leaves client configs alone.
 
 .PARAMETER PruneOldServers
@@ -86,11 +91,12 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'setup-validation.ps1')
 if ([bool]$SetupZip -ne [bool]$ReleaseTag) { throw 'Use -SetupZip and -ReleaseTag together for a pinned release.' }
 
-$bundleName = 'Bimwright.Dwg.bundle'
+$bundleName = 'TbcAcadMcp.bundle'
 $bundleTargetRoot = Join-Path $env:APPDATA "Autodesk\ApplicationPlugins\$bundleName"
 $machineBundleTarget = Join-Path $env:ProgramData "Autodesk\ApplicationPlugins\$bundleName"
-# Product identity: every Bimwright.Dwg bundle carries this ProductCode.
-$DwgMcpProductCode = '{8A3F7B2D-1C4E-4D5F-9A6B-7E8C9D0F1A2B}'
+# Product identity: every TbcAcadMcp bundle carries this ProductCode. It differs
+# from upstream dwg-mcp's, so an upstream Bimwright.Dwg.bundle is never matched.
+$TbcAcadMcpProductCode = '{747893C2-E164-4AB3-AADF-396F82C9C929}'
 
 # AutoCAD release series <-> calendar year (same map PackageContents.xml uses).
 $YearSeries = @{
@@ -145,7 +151,7 @@ if ($setupVersion -notmatch '^v?\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$' -and $set
 # Fixed path for every version: MCP clients are configured once and an update
 # only replaces the files behind it.
 if (-not $ServerInstallRoot) {
-    $ServerInstallRoot = Join-Path $env:LOCALAPPDATA 'Bimwright\dwg-mcp\server\current'
+    $ServerInstallRoot = Join-Path $env:LOCALAPPDATA 'NourRouas\tbc-acad-mcp\server\current'
 }
 
 # A year counts only when acad.exe exists: registry keys can survive uninstalls.
@@ -191,13 +197,14 @@ function Read-BundleManifest([string]$BundleDir) {
 }
 
 # ProductCode-shaped check: our GUID regardless of brace/case formatting.
-function Test-DwgMcpBundle([string]$BundleDir) {
+function Test-TbcAcadMcpBundle([string]$BundleDir) {
     $m = Read-BundleManifest $BundleDir
-    return ($null -ne $m -and $m.ProductCode -eq $DwgMcpProductCode.Trim('{}').ToLowerInvariant())
+    return ($null -ne $m -and $m.ProductCode -eq $TbcAcadMcpProductCode.Trim('{}').ToLowerInvariant())
 }
 
-# Other bundles carrying our ProductCode (Bimwright-era copies, stray
-# duplicates). Two bundles with one ProductCode are undefined for AutoCAD.
+# Other bundles carrying our ProductCode (stray duplicates). Two bundles with
+# one ProductCode are undefined for AutoCAD. Upstream dwg-mcp bundles carry a
+# different ProductCode and are never listed here.
 function Get-DuplicateBundleItems([string]$KeepBundle) {
     $roots = @((Split-Path -Parent $bundleTargetRoot))
     $found = @()
@@ -206,7 +213,7 @@ function Get-DuplicateBundleItems([string]$KeepBundle) {
         if (-not (Test-Path -LiteralPath $root -PathType Container)) { continue }
         foreach ($dir in Get-ChildItem -LiteralPath $root -Directory -Filter '*.bundle' -ErrorAction SilentlyContinue) {
             if ([IO.Path]::GetFullPath($dir.FullName).TrimEnd('\') -eq $keep) { continue }
-            if (Test-DwgMcpBundle $dir.FullName) { $found += $dir.FullName }
+            if (Test-TbcAcadMcpBundle $dir.FullName) { $found += $dir.FullName }
         }
     }
     return $found
@@ -219,7 +226,7 @@ function Find-MachineWideDuplicates {
     $machineRoot = Split-Path -Parent $machineBundleTarget
     if (Test-Path -LiteralPath $machineRoot -PathType Container) {
         foreach ($dir in Get-ChildItem -LiteralPath $machineRoot -Directory -Filter '*.bundle' -ErrorAction SilentlyContinue) {
-            if (Test-DwgMcpBundle $dir.FullName) { $found += $dir.FullName }
+            if (Test-TbcAcadMcpBundle $dir.FullName) { $found += $dir.FullName }
         }
     }
     return $found
@@ -281,7 +288,7 @@ function Set-InstallPath([string]$Source, [string]$Destination) {
     $snapshot = @()
     if (Test-Path -LiteralPath $full) {
         $snapshot = @(Get-InstallSnapshot $full)
-        $backup = $full + '.dwgmcp-rollback-' + [guid]::NewGuid().ToString('N')
+        $backup = $full + '.tbcacadmcp-rollback-' + [guid]::NewGuid().ToString('N')
         Move-Item -LiteralPath $full -Destination $backup
     }
     $script:installChanges.Add([pscustomobject]@{Path=$full;Backup=$backup;Snapshot=$snapshot})
@@ -292,7 +299,7 @@ function Move-ToRollback([string]$Path) {
     $full = [IO.Path]::GetFullPath($Path)
     Assert-SetupPlainPath $full
     $snapshot = @(Get-InstallSnapshot $full)
-    $backup = $full + '.dwgmcp-rollback-' + [guid]::NewGuid().ToString('N')
+    $backup = $full + '.tbcacadmcp-rollback-' + [guid]::NewGuid().ToString('N')
     Move-Item -LiteralPath $full -Destination $backup
     $script:installChanges.Add([pscustomobject]@{Path=$full;Backup=$backup;Snapshot=$snapshot})
 }
@@ -318,7 +325,7 @@ function Register-InstallFile([string]$Path) {
     $backup = $null; $hash = $null; $attributes = $null
     if (Test-Path -LiteralPath $full) {
         if (-not [IO.File]::Exists($full)) { throw "Expected a config file: $full" }
-        $backup = $full + '.dwgmcp-rollback-' + [guid]::NewGuid().ToString('N')
+        $backup = $full + '.tbcacadmcp-rollback-' + [guid]::NewGuid().ToString('N')
         Copy-Item -LiteralPath $full -Destination $backup
         $hash = Get-SetupSha256 $backup
         $attributes = [IO.File]::GetAttributes($full)
@@ -339,86 +346,12 @@ function Write-InstallText([string]$Path, [string]$Text) {
     } finally { if ([IO.File]::Exists($temporary)) { Remove-Item -LiteralPath $temporary -Force } }
 }
 
-function Test-LegacyMigrationMarker([string]$OldRoot, [string]$NewRoot) {
-    $path = Join-Path $NewRoot '.migrated-from-dwg-v1.json'
-    Assert-SetupPlainPath $path
-    if (-not [IO.File]::Exists($path)) { return $false }
-    try { $marker = [IO.File]::ReadAllText($path) | ConvertFrom-Json } catch { return $false }
-    return $marker.product -eq 'dwg-mcp' -and $marker.schema -eq 1 -and $marker.completed -eq $true -and
-        $marker.legacy_root -eq [IO.Path]::GetFullPath($OldRoot) -and $marker.current_root -eq [IO.Path]::GetFullPath($NewRoot)
-}
-
-function Complete-LegacyMigration {
-    if (-not $script:legacyRootRelocated) { return }
-    $old = Join-Path $env:LOCALAPPDATA 'Bimwright\Dwg'
-    $current = Join-Path $env:LOCALAPPDATA 'Bimwright\dwg-mcp'
-    $path = Join-Path $current '.migrated-from-dwg-v1.json'
-    if (Test-Path -LiteralPath $path) { throw "Migration marker already exists; retained without overwriting: $path" }
-    Write-InstallText $path ([ordered]@{product='dwg-mcp';schema=1;completed=$true;legacy_root=[IO.Path]::GetFullPath($old);current_root=[IO.Path]::GetFullPath($current)} | ConvertTo-Json)
-}
-
-# Pre-rename installs kept every per-user file under %LOCALAPPDATA%\Bimwright\Dwg\.
-# The product root is now %LOCALAPPDATA%\Bimwright\dwg-mcp\. The old tree is
-# moved whole - a rename, never a copy - so data stays byte-identical, and its
-# server\current lands exactly on the new server path. The rename is recorded
-# as a Relocate entry so a failed install restores the old folder exactly;
-# Remove-InstallPath never sees these entries, so neither root can be deleted
-# by the transaction.
-function Move-LegacyProductRoot {
-    [CmdletBinding(SupportsShouldProcess = $true)]
-    param([string]$LocalAppData = $env:LOCALAPPDATA)
-    $oldRoot = Join-Path $LocalAppData 'Bimwright\Dwg'
-    $newRoot = Join-Path $LocalAppData 'Bimwright\dwg-mcp'
-    Assert-SetupPlainPath $oldRoot
-    Assert-SetupPlainPath $newRoot
-    if (-not (Test-Path -LiteralPath $oldRoot -PathType Container)) { return }
-    if (Test-Path -LiteralPath $newRoot) {
-        if (Test-LegacyMigrationMarker $oldRoot $newRoot) {
-            Write-Host '[migrate] verified DWG migration marker; keeping current data and legacy recovery files separately.'
-            return
-        }
-        throw "Both $oldRoot and $newRoot exist. Move or remove one of them manually, then run the installer again - nothing was changed."
-    }
-    $closeHint = 'Close AutoCAD and any MCP clients using dwg-mcp, then run the installer again.'
-    if (-not $PSCmdlet.ShouldProcess("$oldRoot -> $newRoot", 'Relocate legacy dwg-mcp data folder')) {
-        Write-Host ("[migrate] preview move {0} -> {1}" -f $oldRoot, $newRoot)
-        return
-    }
-    $familyParent = Split-Path -Parent $newRoot
-    $createdFamilyParent = -not (Test-Path -LiteralPath $familyParent)
-    New-Item -ItemType Directory -Path $familyParent -Force | Out-Null
-    try {
-        [IO.Directory]::Move($oldRoot, $newRoot)
-    } catch {
-        throw ("Could not move {0} to {1}: {2} {3} Nothing was changed." -f $oldRoot, $newRoot, $_.Exception.Message, $closeHint)
-    }
-    $script:installChanges.Add([pscustomobject]@{Kind='Relocate'; From=$oldRoot; To=$newRoot; CreatedParent=$(if ($createdFamilyParent) { $familyParent } else { $null })})
-    $script:legacyRootRelocated = $true
-    Write-Host ("[migrate] moved {0} -> {1}" -f $oldRoot, $newRoot)
-}
-
 function Undo-InstallChanges {
     $failures = @()
-    $failedPaths = @()
     for ($i = $script:installChanges.Count - 1; $i -ge 0; $i--) {
         $change = $script:installChanges[$i]
         try {
-            if ($change.PSObject.Properties['Kind'] -and $change.Kind -eq 'Relocate') {
-                $prefix = $change.To.TrimEnd('\') + '\'
-                if (@($failedPaths | Where-Object { $_ -and $_.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase) }).Count) {
-                    throw "Relocated root retained at $($change.To) because it contains recovery data; do not merge it into $($change.From)."
-                }
-                Assert-SetupPlainPath $change.From
-                Assert-SetupPlainPath $change.To
-                if (Test-Path -LiteralPath $change.To) { [IO.Directory]::Move($change.To, $change.From) }
-                # Roll back a family parent we created once it is empty again;
-                # sibling products or pre-existing content keep it alive.
-                if ($change.PSObject.Properties['CreatedParent'] -and $change.CreatedParent -and
-                    (Test-Path -LiteralPath $change.CreatedParent -PathType Container) -and
-                    @(Get-ChildItem -LiteralPath $change.CreatedParent -Force -ErrorAction SilentlyContinue).Count -eq 0) {
-                    Remove-Item -LiteralPath $change.CreatedParent -Recurse -Force
-                }
-            } elseif ($change.PSObject.Properties['Kind'] -and $change.Kind -eq 'File') {
+            if ($change.PSObject.Properties['Kind'] -and $change.Kind -eq 'File') {
                 Assert-SetupPlainPath $change.Path
                 if ($change.Backup) {
                     Assert-SetupPlainPath $change.Backup
@@ -437,12 +370,7 @@ function Undo-InstallChanges {
                 if ($change.PSObject.Properties['Snapshot'] -and $change.Backup) { Assert-InstallSnapshot $change.Path $change.Snapshot }
             }
         } catch {
-            $failedPaths += $change.Path; $failedPaths += $change.Backup
-            if ($change.PSObject.Properties['Kind'] -and $change.Kind -eq 'Relocate') {
-                $failures += "$($change.To): $_ (restore to $($change.From))"
-            } else {
-                $failures += "$($change.Path): $_ (backup: $($change.Backup))"
-            }
+            $failures += "$($change.Path): $_ (backup: $($change.Backup))"
         }
     }
     if ($failures.Count) { throw ("Rollback incomplete; retain backup files and restore manually:`n" + ($failures -join "`n")) }
@@ -467,11 +395,11 @@ function Assert-BundlePackage([string]$BundleDir, [int[]]$InstallYears) {
     if (-not $BundleDir -or -not (Test-Path -LiteralPath $BundleDir -PathType Container)) {
         throw 'Setup bundle directory is missing (expected bundle\ beside install.ps1).'
     }
-    if (-not (Test-DwgMcpBundle $BundleDir)) {
-        throw "Setup bundle at $BundleDir has no PackageContents.xml with dwg-mcp's ProductCode."
+    if (-not (Test-TbcAcadMcpBundle $BundleDir)) {
+        throw "Setup bundle at $BundleDir has no PackageContents.xml with tbc-acad-mcp's ProductCode."
     }
     foreach ($year in $InstallYears) {
-        $dll = Join-Path $BundleDir ("Contents\{0}\Bimwright.Dwg.Plugin.Acad{1}.dll" -f $year, "{0:D2}" -f ($year - 2000))
+        $dll = Join-Path $BundleDir ("Contents\{0}\TbcAcadMcp.Plugin.Acad{1}.dll" -f $year, "{0:D2}" -f ($year - 2000))
         if (-not (Test-Path -LiteralPath $dll -PathType Leaf)) {
             throw "Missing plugin payload for AutoCAD ${year}: $dll"
         }
@@ -484,7 +412,7 @@ function Assert-BundlePackage([string]$BundleDir, [int[]]$InstallYears) {
 function Assert-RepoPayload([string]$RepoRoot, [int]$Year, [string]$Configuration) {
     $tfm = $script:YearTfm[$Year]
     $dir = Join-Path $RepoRoot ("src\plugin-acad{0}\bin\{1}\{2}" -f ("{0:D2}" -f ($Year - 2000)), $Configuration, $tfm)
-    $dll = Join-Path $dir ("Bimwright.Dwg.Plugin.Acad{0}.dll" -f ("{0:D2}" -f ($Year - 2000)))
+    $dll = Join-Path $dir ("TbcAcadMcp.Plugin.Acad{0}.dll" -f ("{0:D2}" -f ($Year - 2000)))
     if (-not (Test-Path -LiteralPath $dll -PathType Leaf)) {
         throw "Build output missing for AutoCAD ${Year}: $dll. Run: dotnet build src\plugin-acad$("{0:D2}" -f ($Year - 2000)) -c $Configuration"
     }
@@ -496,16 +424,16 @@ function Assert-RepoPayload([string]$RepoRoot, [int]$Year, [string]$Configuratio
 # must land its DLL; package installs also hash-verify against the payload.
 function Assert-InstalledPlugin([int[]]$InstallYears, [string]$BundleDir) {
     $prefix = 'Add-in verification failed:'
-    if (-not (Test-DwgMcpBundle $BundleDir)) {
-        throw "$prefix expected PackageContents.xml with dwg-mcp's ProductCode under $BundleDir"
+    if (-not (Test-TbcAcadMcpBundle $BundleDir)) {
+        throw "$prefix expected PackageContents.xml with tbc-acad-mcp's ProductCode under $BundleDir"
     }
     foreach ($year in $InstallYears) {
-        $dll = Join-Path $BundleDir ("Contents\{0}\Bimwright.Dwg.Plugin.Acad{1}.dll" -f $year, "{0:D2}" -f ($year - 2000))
+        $dll = Join-Path $BundleDir ("Contents\{0}\TbcAcadMcp.Plugin.Acad{1}.dll" -f $year, "{0:D2}" -f ($year - 2000))
         if (-not (Test-Path -LiteralPath $dll -PathType Leaf)) { throw "$prefix missing file $dll" }
         Assert-PluginPayload -PayloadDir (Split-Path -Parent $dll) -Year $year
         if ($script:bundleSourceDir -and (Test-Path -LiteralPath (Join-Path $script:bundleSourceDir "Contents\$year"))) {
             if ($script:manifest) { Assert-InstalledPayload -Prefix "bundle/Contents/$year/" -Destination (Join-Path $BundleDir "Contents\$year") }
-            $expectedStream = [IO.File]::OpenRead((Join-Path $script:bundleSourceDir "Contents\$year\Bimwright.Dwg.Plugin.Acad$("{0:D2}" -f ($year - 2000)).dll"))
+            $expectedStream = [IO.File]::OpenRead((Join-Path $script:bundleSourceDir "Contents\$year\TbcAcadMcp.Plugin.Acad$("{0:D2}" -f ($year - 2000)).dll"))
             try { $expected = Get-StreamSha256 $expectedStream } finally { $expectedStream.Dispose() }
             $actualStream = [IO.File]::OpenRead($dll)
             try { $actual = Get-StreamSha256 $actualStream } finally { $actualStream.Dispose() }
@@ -528,9 +456,9 @@ function Assert-InstallOwnership {
     Assert-SetupPlainPath $script:bundleTargetRoot
     Assert-SetupPlainPath $script:ServerInstallRoot
     if ((Test-Path -LiteralPath $script:bundleTargetRoot) -and @(Get-ChildItem -LiteralPath $script:bundleTargetRoot -Force).Count -and
-        -not (Test-DwgMcpBundle $script:bundleTargetRoot)) { throw 'Existing bundle root is foreign/unreadable; no replacement is allowed.' }
+        -not (Test-TbcAcadMcpBundle $script:bundleTargetRoot)) { throw 'Existing bundle root is foreign/unreadable; no replacement is allowed.' }
     if ((Test-Path -LiteralPath $script:ServerInstallRoot) -and @(Get-ChildItem -LiteralPath $script:ServerInstallRoot -Force).Count -and
-        -not (Test-ServerCopy $script:ServerInstallRoot)) { throw 'Existing server root has no recognized dwg-mcp executable; data was preserved.' }
+        -not (Test-ServerCopy $script:ServerInstallRoot)) { throw 'Existing server root has no recognized tbc-acad-mcp executable; data was preserved.' }
 }
 
 # --- server ----------------------------------------------------------------
@@ -538,14 +466,12 @@ function Assert-InstallOwnership {
 function Find-ServerSourceExe {
     param([string]$ServerDir)
     if (-not $ServerDir) { return $null }
-    $preferred = Join-Path $ServerDir 'dwg-mcp.exe'
-    if (Test-Path $preferred) { return $preferred }
-    $fallback = Join-Path $ServerDir 'Bimwright.Dwg.Server.exe'
-    if (Test-Path $fallback) { return $fallback }
+    $exe = Join-Path $ServerDir 'tbc-acad-mcp.exe'
+    if (Test-Path $exe) { return $exe }
     return $null
 }
 
-function Install-DwgMcpServer {
+function Install-TbcAcadMcpServer {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [string]$ServerDir,
@@ -554,8 +480,8 @@ function Install-DwgMcpServer {
     $sourceExe = Find-ServerSourceExe -ServerDir $ServerDir
     if (-not $sourceExe) { return $null }
 
-    $plannedExe = Join-Path $InstallRoot 'dwg-mcp.exe'
-    if ($PSCmdlet.ShouldProcess($InstallRoot, 'Install self-contained dwg-mcp server')) {
+    $plannedExe = Join-Path $InstallRoot 'tbc-acad-mcp.exe'
+    if ($PSCmdlet.ShouldProcess($InstallRoot, 'Install self-contained tbc-acad-mcp server')) {
         Set-InstallPath -Source $ServerDir -Destination $InstallRoot
         Write-Host ("[server] installed -> {0}" -f $plannedExe)
     } else {
@@ -597,13 +523,13 @@ function Get-OtherServerVersions([string]$InstallRoot) {
 }
 
 function Test-ServerCopy([string]$Dir) {
-    return (Test-Path -LiteralPath (Join-Path $Dir 'dwg-mcp.exe')) -or (Test-Path -LiteralPath (Join-Path $Dir 'Bimwright.Dwg.Server.exe'))
+    return (Test-Path -LiteralPath (Join-Path $Dir 'tbc-acad-mcp.exe'))
 }
 
 # A running server's exe cannot be deleted. Probe it first so a copy that an
 # MCP client still runs is kept whole instead of half-deleted.
 function Remove-ServerCopy([string]$Dir) {
-    foreach ($name in 'dwg-mcp.exe', 'Bimwright.Dwg.Server.exe') {
+    foreach ($name in @('tbc-acad-mcp.exe')) {
         $exe = Join-Path $Dir $name
         if (Test-Path -LiteralPath $exe) {
             try { Remove-Item -LiteralPath $exe -Force -ErrorAction Stop } catch { return $false }
@@ -613,10 +539,10 @@ function Remove-ServerCopy([string]$Dir) {
     catch { Write-Warning ("Could not fully remove {0}: {1}" -f $Dir, $_.Exception.Message); return $false }
 }
 
-# Only names this installer creates: <name>.dwgmcp-rollback-<32 hex>.
+# Only names this installer creates: <name>.tbcacadmcp-rollback-<32 hex>.
 function Get-LeftoverServerCopies([string]$ServerParent) {
     if (-not (Test-Path -LiteralPath $ServerParent -PathType Container)) { return @() }
-    return @(Get-ChildItem -LiteralPath $ServerParent -Directory | Where-Object { $_.Name -match '^.+\.dwgmcp-rollback-[0-9a-f]{32}$' })
+    return @(Get-ChildItem -LiteralPath $ServerParent -Directory | Where-Object { $_.Name -match '^.+\.tbcacadmcp-rollback-[0-9a-f]{32}$' })
 }
 
 # Legacy version directories (from installers before server\current) are kept
@@ -630,7 +556,7 @@ function Remove-StaleServerVersions {
     param([string]$InstallRoot)
     foreach ($dir in Get-OtherServerVersions -InstallRoot $InstallRoot) {
         if ($PSCmdlet.ShouldProcess($dir.FullName, 'Remove stale server version')) {
-            $backup = "$($dir.FullName).dwgmcp-rollback-$([guid]::NewGuid().ToString('N'))"
+            $backup = "$($dir.FullName).tbcacadmcp-rollback-$([guid]::NewGuid().ToString('N'))"
             try {
                 Move-Item -LiteralPath $dir.FullName -Destination $backup
                 $script:installChanges.Add([pscustomobject]@{Path=$dir.FullName;Backup=$backup})
@@ -650,7 +576,7 @@ function Remove-StaleServerVersions {
 # so JSONC comments and key order survive - with a <path>.bak backup and a
 # parse-check that restores the backup on failure. CLI clients go through
 # their own `mcp add`. Nothing is touched unless -Client names it.
-# The config entry key is always the literal 'dwg-mcp'.
+# The config entry key is always the literal 'tbc-acad-mcp'.
 
 # Per-client spec. Kind: cli (own `mcp` command), file (edit config),
 # deeplink (no safe file path - hand the user a cherrystudio:// URL).
@@ -688,7 +614,7 @@ function Get-McpClientSpecs {
     )
 }
 
-# The dwg-mcp entry literal per client shape (path escaped for JSON).
+# The tbc-acad-mcp entry literal per client shape (path escaped for JSON).
 function Get-McpEntryText([string]$EntryKind, [string]$Exe) {
     $e = $Exe.Replace('\', '\\')
     switch ($EntryKind) {
@@ -780,26 +706,6 @@ function Get-JsonMemberSpan([string]$Text, [int]$ObjOpen, [string]$Name) {
     return $null
 }
 
-# All member names of the JSON object whose '{' is at $ObjOpen.
-function Get-JsonObjectMemberNames([string]$Text, [int]$ObjOpen) {
-    $names = New-Object System.Collections.Generic.List[string]
-    $i = Skip-JsonSpace $Text ($ObjOpen + 1)
-    while ($i -lt $Text.Length -and $Text[$i] -ne '}') {
-        if ($Text[$i] -eq '"') {
-            $s = $i; $i = Get-JsonValueEnd $Text $i
-            $names.Add($Text.Substring($s + 1, $i - $s - 2))
-            $afterColon = Skip-JsonSpace $Text $i
-            if ($afterColon -lt $Text.Length -and $Text[$afterColon] -eq ':') {
-                $i = Get-JsonValueEnd $Text (Skip-JsonSpace $Text ($afterColon + 1))
-            }
-            $i = Skip-JsonSpace $Text $i
-            continue
-        }
-        $i++
-    }
-    return $names
-}
-
 # Skip-JsonSpace backwards: whitespace and /* */ blocks; // line comments are
 # left for the parse-check to catch (rare between a comma and a member).
 function Skip-JsonSpaceBack([string]$Text, [int]$i) {
@@ -861,7 +767,7 @@ function Save-McpConfigText([string]$Path, [string]$NewText, [string]$OldText) {
     Write-InstallText $Path $NewText
 }
 
-# True when the config's top-level <RootKey> object has a dwg-mcp member.
+# True when the config's top-level <RootKey> object has a tbc-acad-mcp member.
 # Text scan only, so a file ConvertFrom-Json rejects is still inspected.
 function Test-McpConfigHasEntry([string]$Path, [string]$RootKey) {
     $text = [IO.File]::ReadAllText($Path)
@@ -869,10 +775,10 @@ function Test-McpConfigHasEntry([string]$Path, [string]$RootKey) {
     if ($rootOpen -ge $text.Length -or $text[$rootOpen] -ne '{') { return $false }
     $keySpan = Get-JsonMemberSpan $text $rootOpen $RootKey
     if ($null -eq $keySpan -or $text[$keySpan.ValueStart] -ne '{') { return $false }
-    return $null -ne (Get-JsonMemberSpan $text $keySpan.ValueStart 'dwg-mcp')
+    return $null -ne (Get-JsonMemberSpan $text $keySpan.ValueStart 'tbc-acad-mcp')
 }
 
-# Minimal-edit add/remove of the dwg-mcp entry in a file config.
+# Minimal-edit add/remove of the tbc-acad-mcp entry in a file config.
 # Returns a status word: created|added|repointed|already|custom|removed|absent|previewed.
 function Set-McpConfigEntry {
     [CmdletBinding(SupportsShouldProcess = $true)]
@@ -883,14 +789,15 @@ function Set-McpConfigEntry {
     $full = [IO.Path]::GetFullPath($Path)
     $escapedExe = if ($Exe) { $Exe.Replace('\', '\\') } else { $null }
     $entryText = if ($Exe) { Get-McpEntryText $EntryKind $Exe } else { $null }
-    # Spans the whole JSON string value (quote to quote), so a repoint replaces
-    # the full path rather than splicing the new one after the old prefix.
-    $legacyRx = '(?i)(?<=")(?:[^"]*?Bimwright(?:\\{2}|\\)+Dwg(?:\\{2}|\\)+server(?:\\{2}|\\)+[^"\\]+(?:\\{2}|\\)+dwg-mcp\.exe|[^"]*?dwg-mcp(?:\\{2}|\\)+server(?:\\{2}|\\)+(?!current(?:\\{2}|\\)+)[^"\\]+(?:\\{2}|\\)+dwg-mcp\.exe)(?=")'
+    # A version-named server copy under our own root (never server\current) is
+    # repointed. Spans the whole JSON string value (quote to quote), so a repoint
+    # replaces the full path rather than splicing the new one after the old prefix.
+    $legacyRx = '(?i)(?<=")[^"]*?tbc-acad-mcp(?:\\{2}|\\)+server(?:\\{2}|\\)+(?!current(?:\\{2}|\\)+)[^"\\]+(?:\\{2}|\\)+tbc-acad-mcp\.exe(?=")'
 
     if (-not (Test-Path -LiteralPath $full)) {
         if ($Remove) { return 'absent' }
-        $body = '{ "' + $RootKey + '": { "dwg-mcp": ' + $entryText + ' } }'
-        if ($PSCmdlet.ShouldProcess($full, 'Wire dwg-mcp into client config')) {
+        $body = '{ "' + $RootKey + '": { "tbc-acad-mcp": ' + $entryText + ' } }'
+        if ($PSCmdlet.ShouldProcess($full, 'Wire tbc-acad-mcp into client config')) {
             New-Item -ItemType Directory -Path (Split-Path -Parent $full) -Force | Out-Null
             Write-InstallText $full $body
             return 'created'
@@ -902,8 +809,8 @@ function Set-McpConfigEntry {
     if ($text -notmatch '\S') {
         # Empty file (windsurf ships one) - write the full skeleton.
         if ($Remove) { return 'absent' }
-        $body = '{ "' + $RootKey + '": { "dwg-mcp": ' + $entryText + ' } }'
-        if (-not $PSCmdlet.ShouldProcess($full, 'Wire dwg-mcp into client config')) { return 'previewed' }
+        $body = '{ "' + $RootKey + '": { "tbc-acad-mcp": ' + $entryText + ' } }'
+        if (-not $PSCmdlet.ShouldProcess($full, 'Wire tbc-acad-mcp into client config')) { return 'previewed' }
         Save-McpConfigText $full $body $text
         return 'created'
     }
@@ -918,18 +825,13 @@ function Set-McpConfigEntry {
         Write-Warning "[client] $full is not valid JSON; left unchanged."
         return 'skipped'
     }
+    # Only the tbc-acad-mcp member is read or edited; every other entry (an
+    # upstream dwg-mcp one included) belongs to another product and is kept.
     $keySpan = Get-JsonMemberSpan $text $rootOpen $RootKey
-    # Legacy pre-rename entries are reported, never removed silently.
-    if ($null -ne $keySpan -and $text[$keySpan.ValueStart] -eq '{') {
-        $legacy = @(Get-JsonObjectMemberNames $text $keySpan.ValueStart | Where-Object { $_ -like 'bimwright-dwg*' })
-        if ($legacy.Count) {
-            Write-Warning "[client] $full has legacy entries ($($legacy -join ', ')) - left in place; remove them in the client if unwanted."
-        }
-    }
 
     if ($Remove) {
         if ($null -eq $keySpan -or $text[$keySpan.ValueStart] -ne '{') { return 'absent' }
-        $entrySpan = Get-JsonMemberSpan $text $keySpan.ValueStart 'dwg-mcp'
+        $entrySpan = Get-JsonMemberSpan $text $keySpan.ValueStart 'tbc-acad-mcp'
         if ($null -eq $entrySpan) { return 'absent' }
         # Cut the member plus one adjacent comma (trailing preferred).
         $after = Skip-JsonSpace $text $entrySpan.MemberEnd
@@ -940,29 +842,29 @@ function Set-McpConfigEntry {
             $before = Skip-JsonSpaceBack $text ($entrySpan.MemberStart - 1)
             if ($before -ge 0 -and $text[$before] -eq ',') { $from = $before }
         }
-        if (-not $PSCmdlet.ShouldProcess($full, 'Remove dwg-mcp from client config')) { return 'previewed' }
+        if (-not $PSCmdlet.ShouldProcess($full, 'Remove tbc-acad-mcp from client config')) { return 'previewed' }
         Save-McpConfigText $full ($text.Substring(0, $from) + $text.Substring($to)) $text
         return 'removed'
     }
 
     if ($null -eq $keySpan -or $text[$keySpan.ValueStart] -ne '{') {
-        # Insert "<RootKey>": { "dwg-mcp": <entry> } as the first root member.
-        $inner = '"' + $RootKey + '": { "dwg-mcp": ' + $entryText + ' }'
+        # Insert "<RootKey>": { "tbc-acad-mcp": <entry> } as the first root member.
+        $inner = '"' + $RootKey + '": { "tbc-acad-mcp": ' + $entryText + ' }'
         $next = Skip-JsonSpace $text ($rootOpen + 1)
         if ($next -lt $text.Length -and $text[$next] -ne '}') { $inner += ',' }
         $newText = $text.Insert($rootOpen + 1, "`n    " + $inner + "`n")
-        if (-not $PSCmdlet.ShouldProcess($full, 'Wire dwg-mcp into client config')) { return 'previewed' }
+        if (-not $PSCmdlet.ShouldProcess($full, 'Wire tbc-acad-mcp into client config')) { return 'previewed' }
         Save-McpConfigText $full $newText $text
         return 'added'
     }
 
-    $entrySpan = Get-JsonMemberSpan $text $keySpan.ValueStart 'dwg-mcp'
+    $entrySpan = Get-JsonMemberSpan $text $keySpan.ValueStart 'tbc-acad-mcp'
     if ($null -eq $entrySpan) {
         $next = Skip-JsonSpace $text ($keySpan.ValueStart + 1)
-        $inner = '"dwg-mcp": ' + $entryText
+        $inner = '"tbc-acad-mcp": ' + $entryText
         if ($next -lt $text.Length -and $text[$next] -ne '}') { $inner += ',' }
         $newText = $text.Insert($keySpan.ValueStart + 1, "`n        " + $inner + "`n    ")
-        if (-not $PSCmdlet.ShouldProcess($full, 'Wire dwg-mcp into client config')) { return 'previewed' }
+        if (-not $PSCmdlet.ShouldProcess($full, 'Wire tbc-acad-mcp into client config')) { return 'previewed' }
         Save-McpConfigText $full $newText $text
         return 'added'
     }
@@ -977,7 +879,7 @@ function Set-McpConfigEntry {
         # metachar reinterpretation of the replacement string.
         $newMember = [regex]::Replace($memberText, $legacyRx, { param($m) $escapedExe })
         $newText = $text.Substring(0, $entrySpan.MemberStart) + $newMember + $text.Substring($entrySpan.MemberEnd)
-        if (-not $PSCmdlet.ShouldProcess($full, 'Repoint dwg-mcp to the current server')) { return 'previewed' }
+        if (-not $PSCmdlet.ShouldProcess($full, 'Repoint tbc-acad-mcp to the current server')) { return 'previewed' }
         Save-McpConfigText $full $newText $text
         return 'repointed'
     }
@@ -1016,11 +918,11 @@ function Resolve-McpConfigPath($spec) {
 }
 
 # codex `mcp add` replaces the whole entry - pull args forward from the
-# existing [mcp_servers.dwg-mcp] table so a repoint doesn't drop them.
+# existing [mcp_servers.tbc-acad-mcp] table so a repoint doesn't drop them.
 function Read-CodexEntryArgs([string]$TomlPath) {
     if (-not (Test-Path -LiteralPath $TomlPath)) { return @() }
     $text = [IO.File]::ReadAllText($TomlPath)
-    $m = [regex]::Match($text, '(?ms)^\[mcp_servers\.dwg-mcp\]\s*$(.*?)(?=^\[|\z)')
+    $m = [regex]::Match($text, '(?ms)^\[mcp_servers\.tbc-acad-mcp\]\s*$(.*?)(?=^\[|\z)')
     if (-not $m.Success) { return @() }
     $a = [regex]::Match($m.Groups[1].Value, 'args\s*=\s*\[(.*?)\]')
     if (-not $a.Success) { return @() }
@@ -1032,11 +934,11 @@ function Set-CodexConfigCommand {
     param([string]$Path, [string]$Exe)
     if (-not [IO.File]::Exists($Path)) { return $null }
     $text = [IO.File]::ReadAllText($Path)
-    $table = [regex]::Match($text, '(?ms)^\[mcp_servers\.dwg-mcp\][ \t]*\r?$\r?\n(?<body>.*?)(?=^\[|\z)')
+    $table = [regex]::Match($text, '(?ms)^\[mcp_servers\.tbc-acad-mcp\][ \t]*\r?$\r?\n(?<body>.*?)(?=^\[|\z)')
     if (-not $table.Success) {
         # Quoted/inline TOML tables need a parser; never replace a possible
         # existing entry via `mcp add` just because this minimal edit cannot read it.
-        if ($text -match 'dwg-mcp') { return 'custom' }
+        if ($text -match 'tbc-acad-mcp') { return 'custom' }
         return $null
     }
     $commands = [regex]::Matches($table.Groups['body'].Value, '(?m)^[ \t]*command[ \t]*=[ \t]*(?<value>"(?:[^"\\]|\\.)*"|''[^'']*'')[ \t]*(?:#.*)?\r?$')
@@ -1044,8 +946,8 @@ function Set-CodexConfigCommand {
     $value = $commands[0].Groups['value']
     $command = if ($value.Value.StartsWith('"')) { $value.Value | ConvertFrom-Json } else { $value.Value.Substring(1, $value.Value.Length - 2) }
     if ($command -eq $Exe) { return 'already' }
-    if ($command -notmatch '(?i)[\\/]Bimwright[\\/](?:Dwg|dwg-mcp)[\\/]server[\\/][^\\/]+[\\/]dwg-mcp\.exe$') { return 'custom' }
-    if (-not $PSCmdlet.ShouldProcess($Path, 'Repoint only the Codex dwg-mcp command; keep args/env/other tables')) { return 'previewed' }
+    if ($command -notmatch '(?i)[\\/]NourRouas[\\/]tbc-acad-mcp[\\/]server[\\/][^\\/]+[\\/]tbc-acad-mcp\.exe$') { return 'custom' }
+    if (-not $PSCmdlet.ShouldProcess($Path, 'Repoint only the Codex tbc-acad-mcp command; keep args/env/other tables')) { return 'previewed' }
     $offset = $table.Groups['body'].Index + $value.Index
     Write-InstallText $Path ($text.Remove($offset, $value.Length).Insert($offset, ($Exe | ConvertTo-Json -Compress)))
     return 'repointed'
@@ -1063,7 +965,7 @@ function Assert-ClientRecoveryScope([string[]]$Clients) {
 # Fresh installs default the server to the full tool surface: seed
 # dwgmcp.config.json with toolsets=["all"]. An existing toolsets key is the
 # user's explicit choice and is kept; --toolsets/--read-only args and
-# BIMWRIGHT_* env vars still outrank the file. The write rides the install
+# TBC_ACAD_MCP_* env vars still outrank the file. The write rides the install
 # transaction, so a failed install restores the previous config.
 function Set-DefaultToolsetsConfig {
     [CmdletBinding(SupportsShouldProcess = $true)]
@@ -1152,43 +1054,43 @@ function Invoke-McpClientWiring {
                             $status = Set-CodexConfigCommand -Path $spec.Paths[0] -Exe $Exe
                             if ($status) { $report.Add("codex: $status -> $($spec.Paths[0])"); continue }
                         }
-                        if (-not $PSCmdlet.ShouldProcess($spec.Name, 'wire dwg-mcp via client CLI')) { $report.Add("$($spec.Name): previewed"); continue }
+                        if (-not $PSCmdlet.ShouldProcess($spec.Name, 'wire tbc-acad-mcp via client CLI')) { $report.Add("$($spec.Name): previewed"); continue }
                         if (-not $spec.Paths) { throw 'CLI client has no verified recovery path.' }
                         foreach ($path in $spec.Paths) { Register-InstallFile $path }
                         switch ($spec.Name) {
                             'claude' {
-                                $null = Invoke-ClientCli claude @('mcp', 'remove', 'dwg-mcp', '-s', 'local') -AllowFailure
-                                $out = Invoke-ClientCli claude @('mcp', 'add', '-s', 'user', 'dwg-mcp', '--', $Exe)
-                                $verify = Invoke-ClientCli claude @('mcp', 'get', 'dwg-mcp')
+                                $null = Invoke-ClientCli claude @('mcp', 'remove', 'tbc-acad-mcp', '-s', 'local') -AllowFailure
+                                $out = Invoke-ClientCli claude @('mcp', 'add', '-s', 'user', 'tbc-acad-mcp', '--', $Exe)
+                                $verify = Invoke-ClientCli claude @('mcp', 'get', 'tbc-acad-mcp')
                             }
                             'codex' {
                                 $toml = Join-Path ($(if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $env:USERPROFILE '.codex' })) 'config.toml'
                                 $oldArgs = Read-CodexEntryArgs $toml
-                                $out = Invoke-ClientCli codex (@('mcp', 'add', 'dwg-mcp', '--', $Exe) + @($oldArgs))
-                                $verify = Invoke-ClientCli codex @('mcp', 'get', 'dwg-mcp', '--json')
+                                $out = Invoke-ClientCli codex (@('mcp', 'add', 'tbc-acad-mcp', '--', $Exe) + @($oldArgs))
+                                $verify = Invoke-ClientCli codex @('mcp', 'get', 'tbc-acad-mcp', '--json')
                             }
                             'grok' {
-                                $out = Invoke-ClientCli grok @('mcp', 'add', 'dwg-mcp', $Exe, '--transport', 'stdio')
+                                $out = Invoke-ClientCli grok @('mcp', 'add', 'tbc-acad-mcp', $Exe, '--transport', 'stdio')
                                 $verify = Invoke-ClientCli grok @('mcp', 'list')
                             }
                         }
                         # A refused add leaves the old entry in place; `get`
-                        # still finds dwg-mcp, so it must not read as wired.
+                        # still finds tbc-acad-mcp, so it must not read as wired.
                         if (($out | Out-String) -match 'already exists') {
-                            $report.Add("$($spec.Name): existing dwg-mcp entry left unchanged - inspect it with $($spec.Cli) mcp list")
+                            $report.Add("$($spec.Name): existing tbc-acad-mcp entry left unchanged - inspect it with $($spec.Cli) mcp list")
                             continue
                         }
-                        $verified = ($verify | Out-String) -match 'dwg-mcp'
+                        $verified = ($verify | Out-String) -match 'tbc-acad-mcp'
                         $report.Add("$($spec.Name): " + $(if ($verified) { 'wired' } else { 'wired (verify inconclusive - check the client)' }))
                         if ($spec.Name -eq 'grok' -and ($verify | Out-String) -match '\(project\)') {
                             $report.Add('grok: a project-scope entry may shadow the user one - check grok mcp list from the repo')
                         }
                     } else {
-                        if (-not $PSCmdlet.ShouldProcess($spec.Name, 'remove dwg-mcp via client CLI')) { $report.Add("$($spec.Name): previewed"); continue }
+                        if (-not $PSCmdlet.ShouldProcess($spec.Name, 'remove tbc-acad-mcp via client CLI')) { $report.Add("$($spec.Name): previewed"); continue }
                         switch ($spec.Name) {
-                            'claude' { $null = Invoke-ClientCli claude @('mcp', 'remove', 'dwg-mcp', '-s', 'user') }
-                            'codex'  { $null = Invoke-ClientCli codex @('mcp', 'remove', 'dwg-mcp') }
-                            'grok'   { $null = Invoke-ClientCli grok @('mcp', 'remove', 'dwg-mcp') }
+                            'claude' { $null = Invoke-ClientCli claude @('mcp', 'remove', 'tbc-acad-mcp', '-s', 'user') }
+                            'codex'  { $null = Invoke-ClientCli codex @('mcp', 'remove', 'tbc-acad-mcp') }
+                            'grok'   { $null = Invoke-ClientCli grok @('mcp', 'remove', 'tbc-acad-mcp') }
                         }
                         $report.Add("$($spec.Name): removed")
                     }
@@ -1214,8 +1116,8 @@ function Invoke-McpClientWiring {
                     }
                 }
                 'deeplink' {
-                    if ($Mode -eq 'Remove') { $report.Add('cherry-studio: remove dwg-mcp in Settings -> MCP Servers'); continue }
-                    $json = '{"mcpServers":{"dwg-mcp":{"command":"' + $Exe.Replace('\', '\\') + '","args":[]}}}'
+                    if ($Mode -eq 'Remove') { $report.Add('cherry-studio: remove tbc-acad-mcp in Settings -> MCP Servers'); continue }
+                    $json = '{"mcpServers":{"tbc-acad-mcp":{"command":"' + $Exe.Replace('\', '\\') + '","args":[]}}}'
                     $url = 'cherrystudio://mcp/install?servers=' + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($json))
                     $report.Add('cherry-studio: open this URL to install: ' + $url)
                 }
@@ -1234,7 +1136,7 @@ function Get-InstallGuidePath([string]$ScriptRoot) {
             if (Test-Path -LiteralPath $candidate -PathType Leaf) { return $candidate }
         }
     }
-    return 'https://github.com/bimwright/dwg-mcp/blob/master/README.md'
+    return 'https://github.com/desarrolloteambimcivil/tbc_mcp_autocad/blob/master/README.md'
 }
 
 # `powershell -File` passes "-Years 2024,2027" and "-Client cursor,claude" as one
@@ -1323,7 +1225,6 @@ $Years = @($Years | Sort-Object -Unique)
 $script:installChanges = New-Object System.Collections.Generic.List[object]
 if ($Uninstall) { $script:installChanges = $null }
 $script:installStage = $null
-$script:legacyRootRelocated = $false
 
 try {
     # Validate every selected payload before replacing any installed file.
@@ -1346,13 +1247,13 @@ try {
     # shadowed by the per-user one, and a per-user installer cannot remove it.
     $machineDupes = @(Find-MachineWideDuplicates)
     if ($machineDupes.Count) {
-        $message = "A machine-wide dwg-mcp bundle exists at $($machineDupes -join ', ') (same ProductCode). Remove it with administrator rights"
+        $message = "A machine-wide tbc-acad-mcp bundle exists at $($machineDupes -join ', ') (same ProductCode). Remove it with administrator rights"
         if ($Uninstall) { Write-Warning "$message; it was left in place." }
         else { throw "$message, then run the installer again. Nothing was changed." }
     }
     if (-not $Uninstall) {
         if (-not $WhatIfPreference) {
-            $script:installStage = [IO.Path]::GetFullPath((Join-Path ([IO.Path]::GetTempPath()) ('dwgmcp-install-' + [guid]::NewGuid().ToString('N'))))
+            $script:installStage = [IO.Path]::GetFullPath((Join-Path ([IO.Path]::GetTempPath()) ('tbcacadmcp-install-' + [guid]::NewGuid().ToString('N'))))
             New-Item -ItemType Directory -Path $script:installStage | Out-Null
             $stageContents = Join-Path $script:installStage 'Contents'
             New-Item -ItemType Directory -Path $stageContents -Force | Out-Null
@@ -1382,9 +1283,7 @@ try {
             # Recheck after staging; a user may have launched AutoCAD meanwhile.
             Assert-AutoCadClosed
         }
-        # Relocate the pre-rename %LOCALAPPDATA%\Bimwright\Dwg\ tree before the
-        # first write under the new product root (server deploy, config seeding).
-        Move-LegacyProductRoot -LocalAppData $env:LOCALAPPDATA
+        # Recheck ownership after staging, right before the first write.
         Assert-InstallOwnership
     }
 
@@ -1392,7 +1291,7 @@ try {
     if ($Uninstall) {
         $targets = @($bundleTargetRoot) + $duplicates | Where-Object { Test-Path -LiteralPath $_ }
         foreach ($item in $targets) {
-            if ($PSCmdlet.ShouldProcess($item, 'Remove dwg-mcp plugin bundle')) { Remove-Item -LiteralPath $item -Recurse -Force }
+            if ($PSCmdlet.ShouldProcess($item, 'Remove tbc-acad-mcp plugin bundle')) { Remove-Item -LiteralPath $item -Recurse -Force }
         }
         foreach ($item in $duplicates) { $removedDuplicates += (Split-Path -Leaf $item) }
         if ($targets.Count) {
@@ -1409,7 +1308,7 @@ try {
         }
     } else {
         foreach ($item in $duplicates) {
-            if ($PSCmdlet.ShouldProcess($item, 'Remove duplicate dwg-mcp bundle (same ProductCode)')) { Move-ToRollback $item }
+            if ($PSCmdlet.ShouldProcess($item, 'Remove duplicate tbc-acad-mcp bundle (same ProductCode)')) { Move-ToRollback $item }
             $removedDuplicates += (Split-Path -Leaf $item)
         }
 
@@ -1438,7 +1337,7 @@ try {
             $handled += 'bundle'
         }
 
-        $serverCommand = Install-DwgMcpServer -ServerDir $serverSourceDir -InstallRoot $ServerInstallRoot
+        $serverCommand = Install-TbcAcadMcpServer -ServerDir $serverSourceDir -InstallRoot $ServerInstallRoot
         if ($serverCommand -and $ownServerRoot) {
             if ($PruneOldServers) {
                 Remove-StaleServerVersions -InstallRoot $ServerInstallRoot
@@ -1456,7 +1355,7 @@ try {
         } elseif ($serverCommand) {
             $serverCheck = 'skipped (WhatIf)'
         }
-        $configDefault = Set-DefaultToolsetsConfig -ConfigPath (Join-Path $env:LOCALAPPDATA 'Bimwright\dwg-mcp\dwgmcp.config.json')
+        $configDefault = Set-DefaultToolsetsConfig -ConfigPath (Join-Path $env:LOCALAPPDATA 'NourRouas\tbc-acad-mcp\dwgmcp.config.json')
         if (@($Client | Where-Object { $_ -ne 'none' }).Count) {
             if ($serverCommand) {
                 $wiredClients = @(Invoke-McpClientWiring -Clients $Client -Exe $serverCommand -Mode Add)
@@ -1472,7 +1371,6 @@ try {
         if (-not $WhatIfPreference) {
             Assert-InstalledPlugin -InstallYears $Years -BundleDir $bundleTargetRoot
             $verified += ($Years | ForEach-Object { "Acad$_" })
-            Complete-LegacyMigration
         }
     }
     if ($Uninstall -and @($Client | Where-Object { $_ -ne 'none' }).Count) {
@@ -1520,11 +1418,11 @@ if (-not $Uninstall) {
     if ($serverCommand) { Write-Host ("Server  : {0} (check: {1})" -f $serverCommand, $serverCheck) }
     else { Write-Host 'Server  : not in this package' }
     switch ($configDefault) {
-        'seeded'    { Write-Host ("Config  : seeded toolsets=all -> {0}\Bimwright\dwg-mcp\dwgmcp.config.json" -f $env:LOCALAPPDATA) }
-        'merged'    { Write-Host ("Config  : added toolsets=all to {0}\Bimwright\dwg-mcp\dwgmcp.config.json" -f $env:LOCALAPPDATA) }
+        'seeded'    { Write-Host ("Config  : seeded toolsets=all -> {0}\NourRouas\tbc-acad-mcp\dwgmcp.config.json" -f $env:LOCALAPPDATA) }
+        'merged'    { Write-Host ("Config  : added toolsets=all to {0}\NourRouas\tbc-acad-mcp\dwgmcp.config.json" -f $env:LOCALAPPDATA) }
         'kept'      { Write-Host 'Config  : kept existing toolsets setting' }
         'skipped'   { Write-Host 'Config  : unreadable config - unchanged' }
-        'previewed' { Write-Host ("Config  : preview seed toolsets=all -> {0}\Bimwright\dwg-mcp\dwgmcp.config.json" -f $env:LOCALAPPDATA) }
+        'previewed' { Write-Host ("Config  : preview seed toolsets=all -> {0}\NourRouas\tbc-acad-mcp\dwgmcp.config.json" -f $env:LOCALAPPDATA) }
     }
 }
 foreach ($w in $wiredClients) { Write-Host ("Client  : {0}" -f $w) }
@@ -1533,4 +1431,4 @@ if ($Uninstall -and -not @($Client | Where-Object { $_ -ne 'none' }).Count) {
 }
 if ($inUse.Count) { Write-Host ("In use  : {0} - restart MCP clients; removed at next install" -f ($inUse -join ', ')) }
 if ($legacyServers.Count) { Write-Host ("Legacy  : {0} - repoint clients to the Server path, then run install.ps1 -PruneOldServers" -f (($legacyServers | ForEach-Object { $_.Name }) -join ', ')) }
-if (-not $Uninstall) { Write-Host ("Next    : restart wired MCP clients to load dwg-mcp; manual wiring: {0}" -f $installGuide) }
+if (-not $Uninstall) { Write-Host ("Next    : restart wired MCP clients to load tbc-acad-mcp; manual wiring: {0}" -f $installGuide) }

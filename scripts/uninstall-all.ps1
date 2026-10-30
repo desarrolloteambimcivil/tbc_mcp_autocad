@@ -1,26 +1,27 @@
 <#
 .SYNOPSIS
-  Remove dwg-mcp from this machine (AutoCAD plugin bundle + server + discovery files).
-  Personal data under %LOCALAPPDATA%\Bimwright\dwg-mcp is kept unless -Purge.
-  A leftover legacy %LOCALAPPDATA%\Bimwright\Dwg folder gets the same treatment.
-  MCP client configs are never read or changed.
+  Remove tbc-acad-mcp from this machine (AutoCAD plugin bundle + server + discovery files).
+  Personal data under %LOCALAPPDATA%\NourRouas\tbc-acad-mcp is kept unless -Purge.
+  MCP client configs are never read or changed. An upstream dwg-mcp install
+  (Bimwright.Dwg.bundle, %LOCALAPPDATA%\Bimwright\) is a different product and
+  is never touched.
 
 .DESCRIPTION
   Runs this sweep:
-    1. The Bimwright.Dwg plugin bundle, including stale bundles with the same
+    1. The TbcAcadMcp plugin bundle, including stale bundles with the same
        ProductCode (delegates to install.ps1 -Uninstall).
-    2. Legacy .NET global tool Bimwright.Dwg.Server, if present.
-    3. MCP client configs are not touched: remove the 'dwg-mcp' entry from each
-       client you configured yourself (see README.md).
-    4. Server copies, discovery files (acad-YYYY.json) and the spill cache in
-       %LOCALAPPDATA%\Bimwright\dwg-mcp\ (and a leftover legacy
-       %LOCALAPPDATA%\Bimwright\Dwg\, if one still exists). A server copy that
-       an MCP client is still running is kept whole and reported; close that
-       client and run again.
+    2. The .NET global tool TbcAcadMcp.Server, if present.
+    3. MCP client configs are not touched: remove the 'tbc-acad-mcp' entry from
+       each client you configured yourself (see README.md).
+    4. Server copies, discovery files (acad-YYYY.json, acad-YYYY-PID.json) and
+       the spill cache in %LOCALAPPDATA%\NourRouas\tbc-acad-mcp\, plus the
+       legacy %LOCALAPPDATA%\NourRouas\portAcad24.txt discovery file. A server
+       copy that an MCP client is still running is kept whole and reported;
+       close that client and run again.
        Everything else there - settings.json, dwgmcp.config.json, ToolBaker
        data (bake.db + sidecars), logs, captures and anything unrecognized -
        is kept. -Purge deletes the whole folder; -Purge -KeepLogs keeps logs.
-       The shared %LOCALAPPDATA%\Bimwright\ parent and other product folders
+       The shared %LOCALAPPDATA%\NourRouas\ parent and other product folders
        under it are never removed.
 
   Each step is independently skippable if the target does not exist. Failure mid-step
@@ -35,12 +36,12 @@
 .PARAMETER KeepLogs
   Only matters with -Purge (without it, logs are kept anyway). Preserves:
   - any `logs\` subdirectory (recursively)
-  - any loose `*.log` / `*.jsonl` files at the root of %LOCALAPPDATA%\Bimwright\dwg-mcp\
+  - any loose `*.log` / `*.jsonl` files at the root of %LOCALAPPDATA%\NourRouas\tbc-acad-mcp\
 
 .PARAMETER Purge
-  Delete the whole %LOCALAPPDATA%\Bimwright\dwg-mcp\ tree during step 4 (and a
-  leftover %LOCALAPPDATA%\Bimwright\Dwg\ tree), including settings, config,
-  ToolBaker data, captures and logs. Combine with -KeepLogs to still keep logs.
+  Delete the whole %LOCALAPPDATA%\NourRouas\tbc-acad-mcp\ tree during step 4,
+  including settings, config, ToolBaker data, captures and logs. Combine with
+  -KeepLogs to still keep logs.
 
 .EXAMPLE
   pwsh scripts/uninstall-all.ps1 -WhatIf
@@ -64,7 +65,7 @@ $script:failed  = @()
 # A running server's exe cannot be deleted. Probe it first so a copy that an
 # MCP client still runs is kept whole instead of half-deleted.
 function Remove-ServerCopy([string]$Dir) {
-    foreach ($name in 'dwg-mcp.exe', 'Bimwright.Dwg.Server.exe') {
+    foreach ($name in @('tbc-acad-mcp.exe')) {
         $exe = Join-Path $Dir $name
         if (Test-Path -LiteralPath $exe) {
             try { Remove-Item -LiteralPath $exe -Force -ErrorAction Stop } catch { return $false }
@@ -106,7 +107,7 @@ function Invoke-Step1-Plugin {
 }
 
 function Invoke-Step2-DotnetTool {
-    $toolName = 'Bimwright.Dwg.Server'
+    $toolName = 'TbcAcadMcp.Server'
     try {
         $list = & dotnet tool list -g 2>&1 | Out-String
     } catch {
@@ -157,8 +158,18 @@ function Invoke-Step4-Discovery {
         }
     }
     if ($inUse.Count) {
-        Write-Warning ("[step4] server copies still used by an MCP client were kept: {0}. Close MCP clients that use dwg-mcp, then run again." -f ($inUse -join ', '))
+        Write-Warning ("[step4] server copies still used by an MCP client were kept: {0}. Close MCP clients that use tbc-acad-mcp, then run again." -f ($inUse -join ', '))
         $script:failed += 'step4-discovery'
+    }
+
+    # Legacy AutoCAD 2024 discovery file: it sits in the vendor folder beside the
+    # product root, and only this product writes it there.
+    $legacyPort = Join-Path (Split-Path -Parent $Root) 'portAcad24.txt'
+    if ((Test-Path -LiteralPath $legacyPort -PathType Leaf) -and $PSCmdlet.ShouldProcess($legacyPort, 'Remove-Item')) {
+        try { Remove-Item -LiteralPath $legacyPort -Force } catch {
+            Write-Warning ("[step4] failed to remove {0}: {1}" -f $legacyPort, $_.Exception.Message)
+            $script:failed += 'step4-discovery'
+        }
     }
 
     if ($Purge -and -not $KeepLogs -and $inUse.Count -eq 0) {
@@ -198,7 +209,7 @@ function Invoke-Step4-Discovery {
             }
         } else {
             $remove = ($e.Name -in @('server', 'spill')) -or
-                (-not $e.PSIsContainer -and $e.Name -match '^acad-\d{4}\.json$')
+                (-not $e.PSIsContainer -and $e.Name -match '^acad-\d{4}(-\d+)?\.json$')
         }
         if (-not $remove) {
             $preserved += $e.Name
@@ -234,15 +245,15 @@ function Invoke-Step4-Discovery {
 }
 
 # --- Main ---
-$step4Plan = 'Step4: %LOCALAPPDATA%\Bimwright\dwg-mcp\ server copies (kept while an MCP client still runs them), discovery files and spill cache (settings, config, ToolBaker data, logs and captures are kept); a leftover %LOCALAPPDATA%\Bimwright\Dwg\ gets the same sweep'
+$step4Plan = 'Step4: %LOCALAPPDATA%\NourRouas\tbc-acad-mcp\ server copies (kept while an MCP client still runs them), discovery files (and %LOCALAPPDATA%\NourRouas\portAcad24.txt) and spill cache (settings, config, ToolBaker data, logs and captures are kept)'
 if ($Purge) {
-    $step4Plan = 'Step4 (-Purge): PERMANENTLY delete %LOCALAPPDATA%\Bimwright\dwg-mcp\ (and a leftover %LOCALAPPDATA%\Bimwright\Dwg\) including settings, config, ToolBaker data, captures and logs; the Bimwright parent and sibling products are never touched'
+    $step4Plan = 'Step4 (-Purge): PERMANENTLY delete %LOCALAPPDATA%\NourRouas\tbc-acad-mcp\ including settings, config, ToolBaker data, captures and logs; the NourRouas parent and sibling products are never touched'
     if ($KeepLogs) { $step4Plan += ' (logs kept)' }
 }
 $planned = @(
-    'Step1: Bimwright.Dwg plugin bundle, including stale bundles with the same ProductCode (via install.ps1 -Uninstall)'
-    'Step2: global tool Bimwright.Dwg.Server, if present'
-    'Step3: MCP client configs - not touched; remove the dwg-mcp entry from your clients yourself (see README.md)'
+    'Step1: TbcAcadMcp plugin bundle, including stale bundles with the same ProductCode (via install.ps1 -Uninstall)'
+    'Step2: global tool TbcAcadMcp.Server, if present'
+    'Step3: MCP client configs - not touched; remove the tbc-acad-mcp entry from your clients yourself (see README.md)'
     $step4Plan
 )
 
@@ -254,9 +265,7 @@ if (-not (Confirm-Sweep $planned)) {
 try {
     Invoke-Step1-Plugin
     Invoke-Step2-DotnetTool
-    Invoke-Step4-Discovery -Root (Join-Path $env:LOCALAPPDATA 'Bimwright\dwg-mcp')
-    # A leftover pre-rename %LOCALAPPDATA%\Bimwright\Dwg\ gets the same Keep/Purge sweep.
-    Invoke-Step4-Discovery -Root (Join-Path $env:LOCALAPPDATA 'Bimwright\Dwg')
+    Invoke-Step4-Discovery -Root (Join-Path $env:LOCALAPPDATA 'NourRouas\tbc-acad-mcp')
 } catch {
     Write-Warning ("[main] unexpected error - summary follows. Error: {0}" -f $_.Exception.Message)
     $script:failed += 'main-unexpected-error'
@@ -268,7 +277,7 @@ try {
     Write-Host ("Handled: {0}" -f (($script:handled) -join ', '))
     if ($script:skipped.Count -gt 0) { Write-Host ("Skipped: {0}" -f (($script:skipped) -join ', ')) }
     if ($script:failed.Count  -gt 0) { Write-Host ("Failed : {0}" -f (($script:failed)  -join ', ')) }
-    Write-Host "Clients: MCP client entries were not changed. Remove the 'dwg-mcp' entry from each MCP client you configured (see README.md)."
+    Write-Host "Clients: MCP client entries were not changed. Remove the 'tbc-acad-mcp' entry from each MCP client you configured (see README.md)."
 }
 
 if ($script:failed.Count -gt 0) { exit 1 } else { exit 0 }

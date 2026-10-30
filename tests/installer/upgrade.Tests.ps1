@@ -21,7 +21,6 @@ $realSet = (Get-Command Set-InstallPath).ScriptBlock
 $realSeed = (Get-Command Set-DefaultToolsetsConfig).ScriptBlock
 $realSave = (Get-Command Save-McpConfigText).ScriptBlock
 $realVerify = (Get-Command Assert-InstalledPlugin).ScriptBlock
-$realComplete = (Get-Command Complete-LegacyMigration).ScriptBlock
 $results = New-Object System.Collections.Generic.List[object]
 function Assert($Condition, [string]$Message) { if (-not $Condition) { throw $Message } }
 function Throws([scriptblock]$Body, [string]$Pattern) {
@@ -49,11 +48,11 @@ function Write-FixtureManifest {
     $files=@(Get-SetupFiles $script:SourceDir | Where-Object { [IO.Path]::GetFileName($_) -ne 'manifest.json' } | Sort-Object | ForEach-Object {
         [ordered]@{path=$_.Substring($script:SourceDir.Length+1).Replace('\','/');sha256=(Get-SetupSha256 $_);bytes=(Get-Item -LiteralPath $_).Length}
     })
-    $script:manifest=[pscustomobject]@{name='DwgMcp.Setup';version='99.0.0';platform='win-x64';packedAutocadYears=@(2024);supportedAutocadYears=@(2024);
-        server=[pscustomobject]@{command='server/dwg-mcp.exe';selfContained=$true;requiresDotnet=$false};files=$files}
+    $script:manifest=[pscustomobject]@{name='TbcAcadMcp.Setup';version='99.0.0';platform='win-x64';packedAutocadYears=@(2024);supportedAutocadYears=@(2024);
+        server=[pscustomobject]@{command='server/tbc-acad-mcp.exe';selfContained=$true;requiresDotnet=$false};files=$files}
     Put (Join-Path $script:SourceDir 'manifest.json') ($script:manifest | ConvertTo-Json -Depth 20)
 }
-function New-Fixture([bool]$Legacy=$false) {
+function New-Fixture([bool]$Upstream=$false) {
     $script:caseRoot=Join-Path $testRoot ([guid]::NewGuid().ToString('N'))
     $env:USERPROFILE=Join-Path $script:caseRoot 'profile/user'
     $env:APPDATA=Join-Path $script:caseRoot 'profile/roaming'
@@ -61,10 +60,11 @@ function New-Fixture([bool]$Legacy=$false) {
     $script:SourceDir=Join-Path $script:caseRoot 'package'
     $script:bundleSourceDir=Join-Path $script:SourceDir 'bundle'
     $script:serverSourceDir=Join-Path $script:SourceDir 'server'
-    $script:bundleTargetRoot=Join-Path $env:APPDATA 'Autodesk/ApplicationPlugins/Bimwright.Dwg.bundle'
-    $script:machineBundleTarget=Join-Path $script:caseRoot 'machine/Bimwright.Dwg.bundle'
-    $script:oldRoot=Join-Path $env:LOCALAPPDATA 'Bimwright/Dwg'
-    $script:newRoot=Join-Path $env:LOCALAPPDATA 'Bimwright/dwg-mcp'
+    $script:bundleTargetRoot=Join-Path $env:APPDATA 'Autodesk/ApplicationPlugins/TbcAcadMcp.bundle'
+    $script:machineBundleTarget=Join-Path $script:caseRoot 'machine/TbcAcadMcp.bundle'
+    $script:newRoot=Join-Path $env:LOCALAPPDATA 'NourRouas/tbc-acad-mcp'
+    $script:upstreamRoot=Join-Path $env:LOCALAPPDATA 'Bimwright/dwg-mcp'
+    $script:upstreamBundle=Join-Path $env:APPDATA 'Autodesk/ApplicationPlugins/Bimwright.Dwg.bundle'
     $script:ServerInstallRoot=Join-Path $script:newRoot 'server/current'
     $script:cursor=Join-Path $env:USERPROFILE '.cursor/mcp.json'
     $script:cline=Join-Path $env:APPDATA 'Code/User/cline.json'
@@ -72,34 +72,43 @@ function New-Fixture([bool]$Legacy=$false) {
     $script:Years=@(2024); $script:Client=@('none'); $script:Uninstall=$false; $script:Version=$null
     $script:Config='Debug'; $script:hasSetupLayout=$true; $script:setupVersion='99.0.0'
     $script:SetupZip=$null; $script:ReleaseTag=$null; $script:PruneOldServers=$false
-    $script:installChanges=$null; $script:installStage=$null; $script:legacyRootRelocated=$false
-    $script:DwgMcpProductCode='{8A3F7B2D-1C4E-4D5F-9A6B-7E8C9D0F1A2B}'
+    $script:installChanges=$null; $script:installStage=$null
+    $script:TbcAcadMcpProductCode='{747893C2-E164-4AB3-AADF-396F82C9C929}'
     $script:YearTfm=@{2024='net48'}
     foreach ($scriptName in @('install.ps1','plugin-payload.ps1','setup-validation.ps1')) {
         Put (Join-Path $script:SourceDir $scriptName) ([IO.File]::ReadAllText((Join-Path $repo "scripts/$scriptName")))
     }
     New-Item -ItemType Directory -Path $script:bundleSourceDir -Force | Out-Null
     Save-BundleManifest -OutPath (Join-Path $script:bundleSourceDir 'PackageContents.xml') -CoverYears @(2024) -TemplatePath (Join-Path $repo 'scripts/PackageContents.xml')
-    foreach ($dll in @('Bimwright.Dwg.Plugin.Acad24.dll','Microsoft.CodeAnalysis.dll','Microsoft.CodeAnalysis.CSharp.dll',
+    foreach ($dll in @('TbcAcadMcp.Plugin.Acad24.dll','Microsoft.CodeAnalysis.dll','Microsoft.CodeAnalysis.CSharp.dll',
         'Microsoft.CodeAnalysis.Scripting.dll','Microsoft.CodeAnalysis.CSharp.Scripting.dll','Newtonsoft.Json.dll',
         'System.Buffers.dll','System.Collections.Immutable.dll','System.Memory.dll','System.Numerics.Vectors.dll',
         'System.Reflection.Metadata.dll','System.Runtime.CompilerServices.Unsafe.dll','System.Text.Encoding.CodePages.dll','System.Threading.Tasks.Extensions.dll')) {
         Put (Join-Path $script:bundleSourceDir "Contents/2024/$dll") ('new-fixture-'+$dll)
     }
-    Put (Join-Path $script:serverSourceDir 'dwg-mcp.exe') 'new-server-fixture-not-executable'
+    Put (Join-Path $script:serverSourceDir 'tbc-acad-mcp.exe') 'new-server-fixture-not-executable'
     Put (Join-Path $script:serverSourceDir 'dependency.dll') 'new-server-dependency'
     New-Item -ItemType Directory -Path $script:bundleTargetRoot -Force | Out-Null
     Save-BundleManifest -OutPath (Join-Path $script:bundleTargetRoot 'PackageContents.xml') -CoverYears @(2024,2027) -TemplatePath (Join-Path $repo 'scripts/PackageContents.xml')
-    Put (Join-Path $script:bundleTargetRoot 'Contents/2024/Bimwright.Dwg.Plugin.Acad24.dll') 'old-plugin24'
-    Put (Join-Path $script:bundleTargetRoot 'Contents/2027/Bimwright.Dwg.Plugin.Acad27.dll') 'preserve-unselected27'
-    $data=if($Legacy){$script:oldRoot}else{$script:newRoot}
-    Put (Join-Path $data 'server/current/dwg-mcp.exe') 'old-server'
+    Put (Join-Path $script:bundleTargetRoot 'Contents/2024/TbcAcadMcp.Plugin.Acad24.dll') 'old-plugin24'
+    Put (Join-Path $script:bundleTargetRoot 'Contents/2027/TbcAcadMcp.Plugin.Acad27.dll') 'preserve-unselected27'
+    $data=$script:newRoot
+    Put (Join-Path $data 'server/current/tbc-acad-mcp.exe') 'old-server'
     Put (Join-Path $data 'dwgmcp.config.json') '{"custom":{"keep":42}}'
     Put (Join-Path $data 'settings.json') '{"autoStartTransport":false,"toastIdleSeconds":30}'
     Put (Join-Path $data 'baked/bake.db') 'personal-toolbaker-data'
     Put (Join-Path $data 'captures/personal.png') 'personal-capture'
-    $legacyCommand=(Join-Path $script:oldRoot 'server/0.5.0/dwg-mcp.exe').Replace('\','\\')
-    Put $script:cursor ('{ /*keep comment*/ "mcpServers": { "dwg-mcp": {"command":"'+$legacyCommand+'","args":["--read-only"],"env":{"KEEP":"value"}},"other":{"command":"keep"}} }')
+    if ($Upstream) {
+        # Upstream bimwright/dwg-mcp: a different product with its own ProductCode.
+        Put (Join-Path $script:upstreamRoot 'server/current/dwg-mcp.exe') 'upstream-server'
+        Put (Join-Path $script:upstreamRoot 'dwgmcp.config.json') '{"upstream":true}'
+        Put (Join-Path $script:upstreamBundle 'PackageContents.xml') ('<?xml version="1.0" encoding="utf-8"?><ApplicationPackage SchemaVersion="1.0" AppVersion="2.1.1" AutodeskProduct="AutoCAD" Name="Bimwright.Dwg" ProductCode="{8A3F7B2D-1C4E-4D5F-9A6B-7E8C9D0F1A2B}"><CompanyDetails Name="Bimwright" />' +
+            '<Components><RuntimeRequirements OS="Win64" Platform="AutoCAD*" SeriesMin="R24.3" SeriesMax="R24.3" /><ComponentEntry AppName="Bimwright.Dwg.Plugin.Acad24" ModuleName="./Contents/2024/Bimwright.Dwg.Plugin.Acad24.dll" /></Components></ApplicationPackage>')
+        Put (Join-Path $script:upstreamBundle 'Contents/2024/Bimwright.Dwg.Plugin.Acad24.dll') 'upstream-plugin24'
+    }
+    $versionedCommand=(Join-Path $script:newRoot 'server/0.5.0/tbc-acad-mcp.exe').Replace('\','\\')
+    $script:upstreamEntry='"dwg-mcp":{"command":"C:\\upstream\\Bimwright\\dwg-mcp\\server\\current\\dwg-mcp.exe"}'
+    Put $script:cursor ('{ /*keep comment*/ "mcpServers": { "tbc-acad-mcp": {"command":"'+$versionedCommand+'","args":["--read-only"],"env":{"KEEP":"value"}},'+$script:upstreamEntry+',"other":{"command":"keep"}} }')
     Put $script:cline '{"mcpServers":{"other":{"command":"keep"}}}'
     Put ($script:cursor+'.bak') 'pre-existing-backup-preserve'
     Write-FixtureManifest
@@ -137,18 +146,13 @@ function Assert-InstalledPlugin([int[]]$InstallYears,[string]$BundleDir) {
     if ($script:FailAt -eq 'lock-client') { $script:held=New-Object IO.FileStream($script:cursor,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::None); throw 'injected after client edit' }
     if ($script:FailAt -eq 'corrupt-backup') {
         $backup=($script:installChanges | Where-Object Path -eq $script:ServerInstallRoot).Backup
-        Put (Join-Path $backup 'dwg-mcp.exe') 'corrupted recovery fixture'; throw 'injected recovery corruption'
+        Put (Join-Path $backup 'tbc-acad-mcp.exe') 'corrupted recovery fixture'; throw 'injected recovery corruption'
     }
-    if ($script:FailAt -eq 'recreated-legacy') { Put (Join-Path $script:oldRoot 'concurrent.txt') 'concurrent-data'; throw 'injected recreated old root' }
     if ($script:FailAt -eq 'final-verify') { throw 'injected final verification failure' }
-}
-function Complete-LegacyMigration {
-    & $realComplete
-    if ($script:FailAt -eq 'marker-commit') { throw 'injected after marker' }
 }
 function Invoke-FixtureInstall { [CmdletBinding(SupportsShouldProcess=$true)]param() . $main }
 function Make-Zip {
-    $script:zipPath=Join-Path $script:caseRoot 'DwgMcp.Setup-v99.0.0-win-x64.zip'
+    $script:zipPath=Join-Path $script:caseRoot 'TbcAcadMcp.Setup-v99.0.0-win-x64.zip'
     Compress-Archive -Path (Join-Path $script:SourceDir '*') -DestinationPath $script:zipPath
     Put ($script:zipPath+'.sha256') ((Get-SetupSha256 $script:zipPath)+'  '+[IO.Path]::GetFileName($script:zipPath)+"`n")
 }
@@ -167,7 +171,7 @@ try {
     Test 'JSON year claims and bundle XML must match included payloads' {
         New-Fixture; $script:manifest.supportedAutocadYears=@(2024,2027); $null=Throws {Assert-SetupManifest $script:SourceDir $script:manifest} 'years'
         Write-FixtureManifest; [xml]$xml=[IO.File]::ReadAllText((Join-Path $script:bundleSourceDir 'PackageContents.xml'))
-        $xml.ApplicationPackage.Components.ComponentEntry.ModuleName='./Contents/2027/Bimwright.Dwg.Plugin.Acad27.dll'
+        $xml.ApplicationPackage.Components.ComponentEntry.ModuleName='./Contents/2027/TbcAcadMcp.Plugin.Acad27.dll'
         $xml.Save((Join-Path $script:bundleSourceDir 'PackageContents.xml')); Write-FixtureManifest
         $null=Throws {Assert-SetupManifest $script:SourceDir $script:manifest} 'XML advertises'
     }
@@ -189,7 +193,7 @@ try {
     Test 'ZIP duplicate paths are refused after separator normalization' {
         New-Fixture; Make-Zip
         $archive=[IO.Compression.ZipFile]::Open($script:zipPath,[IO.Compression.ZipArchiveMode]::Update)
-        try { $null=$archive.CreateEntry('server/dwg-mcp.exe'.Replace('/', '\')) ; $null=$archive.CreateEntry('SERVER/dwg-mcp.exe') }
+        try { $null=$archive.CreateEntry('server/tbc-acad-mcp.exe'.Replace('/', '\')) ; $null=$archive.CreateEntry('SERVER/tbc-acad-mcp.exe') }
         finally {$archive.Dispose()}
         Put ($script:zipPath+'.sha256') ((Get-SetupSha256 $script:zipPath)+'  '+[IO.Path]::GetFileName($script:zipPath))
         $null=Throws {Assert-SetupArchive $script:zipPath 'v99.0.0' $script:SourceDir} 'Duplicate ZIP entry'
@@ -207,27 +211,40 @@ try {
         Assert ((Tree (Join-Path $script:caseRoot 'profile')) -ceq $before) 'Linked package changed targets'
         Assert ([IO.File]::ReadAllText($protected) -ceq 'keep') 'Linked data changed'
     }
-    foreach ($phase in @('replace-1','replace-2','replace-3','server-check','config-seed','client-1','client-2','final-verify','corrupt-plugin','corrupt-server','marker-commit')) {
-        Test "Caught failure $phase restores all files and legacy root" {
+    foreach ($phase in @('replace-1','replace-2','replace-3','server-check','config-seed','client-1','client-2','final-verify','corrupt-plugin','corrupt-server')) {
+        Test "Caught failure $phase restores all files and leaves upstream dwg-mcp alone" {
             New-Fixture $true; $script:Client=@('cursor','cline'); $script:FailAt=$phase
             $before=Tree (Join-Path $script:caseRoot 'profile')
             $null=Throws {Invoke-FixtureInstall} 'injected|verification failed'
             Assert ((Tree (Join-Path $script:caseRoot 'profile')) -ceq $before) 'Rollback did not restore exact file bytes/inventory'
-            Assert (-not [IO.Directory]::Exists($script:newRoot)) 'Relocated root was not restored'
         }
     }
-    Test 'Success preserves data, pre-existing backups and unselected AutoCAD payload' {
-        New-Fixture $true; $script:Client=@('cursor','cline'); Invoke-FixtureInstall
+    Test 'Success preserves data, pre-existing backups, unselected AutoCAD payload and upstream dwg-mcp' {
+        New-Fixture $true; $script:Client=@('cursor','cline')
+        $upstreamBefore=(Tree $script:upstreamRoot)+'|'+(Tree $script:upstreamBundle)
+        Invoke-FixtureInstall
         Assert (([IO.File]::ReadAllText((Join-Path $script:newRoot 'baked/bake.db'))) -eq 'personal-toolbaker-data') 'Lost ToolBaker data'
         Assert (([IO.File]::ReadAllText((Join-Path $script:newRoot 'captures/personal.png'))) -eq 'personal-capture') 'Lost capture'
         Assert (([IO.File]::ReadAllText(($script:cursor+'.bak'))) -eq 'pre-existing-backup-preserve') 'Overwrote old .bak'
         $cfg=ConvertFrom-JsoncText ([IO.File]::ReadAllText($script:cursor))
-        Assert ($cfg.mcpServers.'dwg-mcp'.command -eq (Join-Path $script:ServerInstallRoot 'dwg-mcp.exe')) 'Wrong repoint'
-        Assert ($cfg.mcpServers.'dwg-mcp'.args[0] -eq '--read-only' -and $cfg.mcpServers.'dwg-mcp'.env.KEEP -eq 'value') 'Lost args/env'
+        Assert ($cfg.mcpServers.'tbc-acad-mcp'.command -eq (Join-Path $script:ServerInstallRoot 'tbc-acad-mcp.exe')) 'Wrong repoint'
+        Assert ($cfg.mcpServers.'tbc-acad-mcp'.args[0] -eq '--read-only' -and $cfg.mcpServers.'tbc-acad-mcp'.env.KEEP -eq 'value') 'Lost args/env'
         Assert ([IO.File]::ReadAllText($script:cursor).Contains('keep comment')) 'Lost JSONC comment'
-        Assert (Test-LegacyMigrationMarker $script:oldRoot $script:newRoot) 'Missing committed migration marker'
+        Assert ([IO.File]::ReadAllText($script:cursor).Contains($script:upstreamEntry)) 'Changed the upstream dwg-mcp client entry'
+        Assert (((Tree $script:upstreamRoot)+'|'+(Tree $script:upstreamBundle)) -ceq $upstreamBefore) 'Changed upstream dwg-mcp files'
         Assert ((Read-BundleManifest $script:bundleTargetRoot).Years -contains 2027) 'Lost unselected installed year in XML'
-        Assert (([IO.File]::ReadAllText((Join-Path $script:bundleTargetRoot 'Contents/2027/Bimwright.Dwg.Plugin.Acad27.dll'))) -eq 'preserve-unselected27') 'Touched unselected payload'
+        Assert (([IO.File]::ReadAllText((Join-Path $script:bundleTargetRoot 'Contents/2027/TbcAcadMcp.Plugin.Acad27.dll'))) -eq 'preserve-unselected27') 'Touched unselected payload'
+    }
+    Test 'Uninstall removes only the tbc-acad-mcp bundle and client entry' {
+        New-Fixture $true; $script:Uninstall=$true; $script:Client=@('cursor')
+        $upstreamBefore=(Tree $script:upstreamRoot)+'|'+(Tree $script:upstreamBundle)
+        Invoke-FixtureInstall
+        Assert (-not [IO.Directory]::Exists($script:bundleTargetRoot)) 'tbc-acad-mcp bundle not removed'
+        Assert (((Tree $script:upstreamRoot)+'|'+(Tree $script:upstreamBundle)) -ceq $upstreamBefore) 'Changed upstream dwg-mcp files'
+        $cfg=ConvertFrom-JsoncText ([IO.File]::ReadAllText($script:cursor))
+        Assert (-not $cfg.mcpServers.PSObject.Properties['tbc-acad-mcp']) 'tbc-acad-mcp client entry not removed'
+        Assert ([IO.File]::ReadAllText($script:cursor).Contains($script:upstreamEntry)) 'Removed or changed the upstream dwg-mcp client entry'
+        Assert ([IO.File]::Exists((Join-Path $script:ServerInstallRoot 'tbc-acad-mcp.exe'))) 'Bundle uninstall removed the server'
     }
     Test 'Comma and space lists bind the same years/clients as arrays' {
         foreach ($years in @('2024,2027', '2024 2027', @(2024, 2027), @('2024', '2027'))) {
@@ -255,49 +272,12 @@ try {
         Assert ($preview -match 'years=2024; clients=cursor') 'Missing scope preview'
         Assert ((Tree $script:caseRoot) -ceq $before) 'WhatIf wrote files'
     }
-    Test 'Unmarked dual roots and foreign markers preserve both roots' {
-        New-Fixture $true; Put (Join-Path $script:newRoot 'settings.json') 'independent current data'
-        Put (Join-Path $script:newRoot '.migrated-from-rvtmcp-v2') 'foreign'
-        $before=Tree (Join-Path $script:caseRoot 'profile'); $null=Throws {Invoke-FixtureInstall} 'Both .* exist'
-        Assert ((Tree (Join-Path $script:caseRoot 'profile')) -ceq $before) 'Dual-root data changed'
-    }
-    Test 'Valid DWG marker keeps both roots separate without merging data' {
-        New-Fixture $true; $script:installChanges=New-Object System.Collections.Generic.List[object]
-        Move-LegacyProductRoot -LocalAppData $env:LOCALAPPDATA
-        Complete-LegacyMigration
-        Put (Join-Path $script:oldRoot 'legacy-recovery.txt') 'keep separately'
-        $before=Tree (Join-Path $script:caseRoot 'profile'); Move-LegacyProductRoot -LocalAppData $env:LOCALAPPDATA
-        Assert ((Tree (Join-Path $script:caseRoot 'profile')) -ceq $before) 'Marker route merged/changed roots'
-        $marker=Join-Path $script:newRoot '.migrated-from-dwg-v1.json'; $m=[IO.File]::ReadAllText($marker) | ConvertFrom-Json; $m.legacy_root='wrong'; Put $marker ($m | ConvertTo-Json)
-        $null=Throws {Move-LegacyProductRoot -LocalAppData $env:LOCALAPPDATA} 'Both .* exist'
-    }
-    Test 'Marked dual roots upgrade preserves independent data and committed marker' {
-        New-Fixture $true; $script:installChanges=New-Object System.Collections.Generic.List[object]
-        Move-LegacyProductRoot -LocalAppData $env:LOCALAPPDATA; Complete-LegacyMigration
-        Put (Join-Path $script:oldRoot 'settings.json') 'independent-legacy-settings'
-        Put (Join-Path $script:oldRoot 'baked/bake.db') 'independent-legacy-tools'
-        $legacyBefore=Tree $script:oldRoot
-        $settingsBefore=Get-SetupSha256 (Join-Path $script:newRoot 'settings.json')
-        $markerBefore=Get-SetupSha256 (Join-Path $script:newRoot '.migrated-from-dwg-v1.json')
-        Invoke-FixtureInstall
-        Assert ((Tree $script:oldRoot) -ceq $legacyBefore) 'Merged or changed independent legacy data'
-        Assert ((Get-SetupSha256 (Join-Path $script:newRoot 'settings.json')) -eq $settingsBefore) 'Changed current settings'
-        Assert ((Get-SetupSha256 (Join-Path $script:newRoot '.migrated-from-dwg-v1.json')) -eq $markerBefore) 'Replaced committed marker'
-        Assert ([IO.File]::ReadAllText((Join-Path $script:newRoot 'baked/bake.db')) -eq 'personal-toolbaker-data') 'Lost current ToolBaker data'
-    }
     Test 'New client config is removed on caught failure without losing an existing backup' {
         New-Fixture $true; Remove-Item -LiteralPath $script:cursor
         $script:Client=@('cursor'); $script:FailAt='final-verify'
         $before=Tree (Join-Path $script:caseRoot 'profile')
         $null=Throws {Invoke-FixtureInstall} 'injected'
         Assert ((Tree (Join-Path $script:caseRoot 'profile')) -ceq $before) 'New client config/rollback changed original inventory'
-    }
-    Test 'Recreated legacy root is retained separately during rollback' {
-        New-Fixture $true; $script:FailAt='recreated-legacy'
-        $null=Throws {Invoke-FixtureInstall} 'Rollback incomplete'
-        Assert ([IO.Directory]::Exists($script:newRoot)) 'Lost relocated recovery root'
-        Assert (([IO.File]::ReadAllText((Join-Path $script:oldRoot 'concurrent.txt'))) -eq 'concurrent-data') 'Clobbered recreated root'
-        Assert (-not [IO.Directory]::Exists((Join-Path $script:oldRoot 'dwg-mcp'))) 'Nested/merged roots on undo'
     }
     Test 'Locked client rollback reports and retains the verified recovery copy' {
         New-Fixture; $script:Client=@('cursor'); $script:FailAt='lock-client'; $before=Get-SetupSha256 $script:cursor
@@ -307,26 +287,25 @@ try {
         Assert ([IO.File]::Exists($change.Backup)) 'Recovery backup deleted'
         Assert ((Get-SetupSha256 $change.Backup) -eq $before) 'Recovery copy differs from original'
         Assert ($message.Contains($change.Backup)) 'Recovery path not reported'
-        Assert (([IO.File]::ReadAllText((Join-Path $script:ServerInstallRoot 'dwg-mcp.exe'))) -eq 'old-server') 'Server not restored'
+        Assert (([IO.File]::ReadAllText((Join-Path $script:ServerInstallRoot 'tbc-acad-mcp.exe'))) -eq 'old-server') 'Server not restored'
     }
-    Test 'Bad recovery snapshot is refused before target deletion and root relocation is held' {
+    Test 'Bad recovery snapshot is refused before target deletion' {
         New-Fixture $true; $script:FailAt='corrupt-backup'
         $message=Throws {Invoke-FixtureInstall} 'Rollback incomplete'
-        Assert ($message.Contains($script:newRoot)) 'Actual retained root not reported'
-        Assert (([IO.File]::ReadAllText((Join-Path $script:ServerInstallRoot 'dwg-mcp.exe'))) -eq 'new-server-fixture-not-executable') 'Deleted target despite bad backup'
-        Assert ([IO.Directory]::Exists($script:newRoot) -and -not [IO.Directory]::Exists($script:oldRoot)) 'Moved a root containing unresolved recovery files'
+        Assert ($message.Contains($script:ServerInstallRoot)) 'Retained server root not reported'
+        Assert (([IO.File]::ReadAllText((Join-Path $script:ServerInstallRoot 'tbc-acad-mcp.exe'))) -eq 'new-server-fixture-not-executable') 'Deleted target despite bad backup'
     }
     Test 'Foreign install roots and unsupported CLI recovery stop before replacement' {
-        New-Fixture; Remove-Item -LiteralPath (Join-Path $script:ServerInstallRoot 'dwg-mcp.exe'); Put (Join-Path $script:ServerInstallRoot 'personal.txt') 'keep'
+        New-Fixture; Remove-Item -LiteralPath (Join-Path $script:ServerInstallRoot 'tbc-acad-mcp.exe'); Put (Join-Path $script:ServerInstallRoot 'personal.txt') 'keep'
         $before=Tree (Join-Path $script:caseRoot 'profile'); $null=Throws {Invoke-FixtureInstall} 'no recognized'; Assert ((Tree (Join-Path $script:caseRoot 'profile')) -ceq $before) 'Touched foreign server root'
         New-Fixture; $script:Client=@('grok'); $before=Tree (Join-Path $script:caseRoot 'profile'); $null=Throws {Invoke-FixtureInstall} 'no verified config recovery path'; Assert ((Tree (Join-Path $script:caseRoot 'profile')) -ceq $before) 'Unsupported CLI mutated install'
     }
     Test 'Codex command-only repoint and rollback preserve TOML args/env/comments/other tables' {
         New-Fixture; $path=Join-Path $script:caseRoot 'codex/config.toml'
-        $old=(Join-Path $script:oldRoot 'server/0.5.0/dwg-mcp.exe').Replace('\','\\')
-        $toml="# comment`r`n[mcp_servers.dwg-mcp]`r`ncommand = `"$old`" # keep`r`nargs = [`"--read-only`"]`r`n[mcp_servers.dwg-mcp.env]`r`nKEEP = `"value`"`r`n[other]`r`nx = 1`r`n"
+        $old=(Join-Path $script:newRoot 'server/0.5.0/tbc-acad-mcp.exe').Replace('\','\\')
+        $toml="# comment`r`n[mcp_servers.tbc-acad-mcp]`r`ncommand = `"$old`" # keep`r`nargs = [`"--read-only`"]`r`n[mcp_servers.tbc-acad-mcp.env]`r`nKEEP = `"value`"`r`n[other]`r`nx = 1`r`n"
         Put $path $toml; $script:installChanges=New-Object System.Collections.Generic.List[object]
-        $status=Set-CodexConfigCommand -Path $path -Exe (Join-Path $script:ServerInstallRoot 'dwg-mcp.exe')
+        $status=Set-CodexConfigCommand -Path $path -Exe (Join-Path $script:ServerInstallRoot 'tbc-acad-mcp.exe')
         Assert ($status -eq 'repointed') 'Codex entry not repointed'
         $updated=[IO.File]::ReadAllText($path)
         Assert ($updated.Contains('args = ["--read-only"]') -and $updated.Contains('KEEP = "value"') -and $updated.Contains('# keep') -and $updated.Contains('[other]')) 'Dropped TOML data'
@@ -334,7 +313,7 @@ try {
     }
     Test 'Codex unknown TOML entry shapes remain untouched' {
         New-Fixture; $path=Join-Path $script:caseRoot 'codex/config.toml'
-        $toml='[mcp_servers."dwg-mcp"]' + "`ncommand = 'custom.exe'`nargs = ['keep']`n"
+        $toml='[mcp_servers."tbc-acad-mcp"]' + "`ncommand = 'custom.exe'`nargs = ['keep']`n"
         Put $path $toml; $script:installChanges=New-Object System.Collections.Generic.List[object]
         Assert ((Set-CodexConfigCommand -Path $path -Exe 'replacement.exe') -eq 'custom') 'Unknown entry could fall through to CLI replacement'
         Assert ([IO.File]::ReadAllText($path) -ceq $toml) 'Changed unknown TOML entry'

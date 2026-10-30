@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Build the end-user dwg-mcp setup ZIP (self-contained server + AutoCAD 2022-2027 plugins).
+  Build the end-user tbc-acad-mcp setup ZIP (self-contained server + AutoCAD 2022-2027 plugins).
 #>
 [CmdletBinding()]
 param(
@@ -49,16 +49,15 @@ $contentsStage = Join-Path $bundleStage 'Contents'
 if (Test-Path $stageRoot) { Remove-Item $stageRoot -Recurse -Force }
 New-Item -ItemType Directory -Path $serverStage, $contentsStage -Force | Out-Null
 
-Write-Host "=== dwg-mcp package-client-setup ($displayVersion) ==="
+Write-Host "=== tbc-acad-mcp package-client-setup ($displayVersion) ==="
 
 $serverProject = Join-Path $RepoRoot 'src\server\Bimwright.Dwg.Server.csproj'
 & dotnet publish $serverProject -c $Config -r win-x64 --self-contained true /p:PublishSingleFile=true -o $serverStage
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed: $LASTEXITCODE" }
 
-$published = Join-Path $serverStage 'Bimwright.Dwg.Server.exe'
-$friendly = Join-Path $serverStage 'dwg-mcp.exe'
+# AssemblyName is tbc-acad-mcp, so the single-file exe already has the installed name.
+$published = Join-Path $serverStage 'tbc-acad-mcp.exe'
 if (-not (Test-Path $published)) { throw "Missing $published" }
-Move-Item $published $friendly -Force
 
 $years = @(
     @{ Year = 2022; Suffix = '22'; Tfm = 'net48' }
@@ -77,7 +76,7 @@ foreach ($y in $years) {
     # References come from NuGet, so a failed year is a real error, not a missing local install.
     if ($LASTEXITCODE -ne 0) { throw "AutoCAD $($y.Year) plugin build failed: $LASTEXITCODE" }
     $outDir = Join-Path $RepoRoot ("src\plugin-acad{0}\bin\{1}\{2}" -f $y.Suffix, $Config, $y.Tfm)
-    $dll = Join-Path $outDir ("Bimwright.Dwg.Plugin.Acad{0}.dll" -f $y.Suffix)
+    $dll = Join-Path $outDir ("TbcAcadMcp.Plugin.Acad{0}.dll" -f $y.Suffix)
     if (-not (Test-Path $dll)) { throw "Built but missing $dll" }
     Assert-PluginPayload -PayloadDir $outDir -Year $y.Year
     $dest = Join-Path $contentsStage "$($y.Year)"
@@ -137,7 +136,7 @@ foreach ($f in @(Get-ChildItem $stageRoot -File -Recurse | Sort-Object FullName)
 }
 
 $manifest = [ordered]@{
-    name = 'DwgMcp.Setup'
+    name = 'TbcAcadMcp.Setup'
     version = $Version
     generatedAtUtc = (Get-Date).ToUniversalTime().ToString('o')
     commit = $commit
@@ -145,13 +144,13 @@ $manifest = [ordered]@{
     platform = 'win-x64'
     packedAutocadYears = @($packedYears)
     supportedAutocadYears = @($packedYears)
-    server = [ordered]@{ command = 'server/dwg-mcp.exe'; selfContained = $true; requiresDotnet = $false }
+    server = [ordered]@{ command = 'server/tbc-acad-mcp.exe'; selfContained = $true; requiresDotnet = $false }
     files = $files
 }
 $manifest | ConvertTo-Json -Depth 20 | Set-Content (Join-Path $stageRoot 'manifest.json') -Encoding UTF8
 Assert-SetupManifest -Root $stageRoot -Manifest ([pscustomobject]$manifest)
 
-$setupZip = Join-Path $OutputDir ("DwgMcp.Setup-{0}-win-x64.zip" -f $displayVersion)
+$setupZip = Join-Path $OutputDir ("TbcAcadMcp.Setup-{0}-win-x64.zip" -f $displayVersion)
 if (Test-Path $setupZip) { Remove-Item $setupZip -Force }
 Compress-Archive -Path (Join-Path $stageRoot '*') -DestinationPath $setupZip -Force
 $checksum = (Get-Sha256Lower $setupZip) + '  ' + [IO.Path]::GetFileName($setupZip) + "`n"

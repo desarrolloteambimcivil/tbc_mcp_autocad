@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Uninstall the Bimwright.Dwg plugin bundle.
+    Uninstall the tbc-acad-mcp plugin bundle (TbcAcadMcp.bundle).
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param()

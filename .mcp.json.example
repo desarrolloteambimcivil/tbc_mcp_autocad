@@ -1,7 +1,7 @@
 {
   "mcpServers": {
-    "bimwright-dwg": {
-      "command": "bimwright-dwg",
+    "tbc-acad-mcp": {
+      "command": "tbc-acad-mcp",
       "args": ["--target", "2024"]
     }
   }

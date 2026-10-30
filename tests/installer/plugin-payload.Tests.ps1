@@ -30,19 +30,19 @@ foreach ($file in @('scripts/plugin-payload.ps1', 'scripts/install.ps1')) {
     }
 }
 $script:YearTfm = @{2024='net48'; 2027='net10.0-windows'}
-$script:DwgMcpProductCode = '{8A3F7B2D-1C4E-4D5F-9A6B-7E8C9D0F1A2B}'
+$script:TbcAcadMcpProductCode = '{747893C2-E164-4AB3-AADF-396F82C9C929}'
 $script:bundleSourceDir = $null
 $runtimeDlls = @('Microsoft.CodeAnalysis.dll', 'Microsoft.CodeAnalysis.CSharp.dll',
     'Microsoft.CodeAnalysis.Scripting.dll', 'Microsoft.CodeAnalysis.CSharp.Scripting.dll', 'Newtonsoft.Json.dll')
 function New-PayloadFixture([string]$Path) {
     New-Item -ItemType Directory -Path $Path -Force | Out-Null
-    foreach ($dll in @($runtimeDlls) + @('Bimwright.Dwg.Plugin.Acad27.dll', 'System.Collections.Immutable.dll')) {
+    foreach ($dll in @($runtimeDlls) + @('TbcAcadMcp.Plugin.Acad27.dll', 'System.Collections.Immutable.dll')) {
         Set-Content -LiteralPath (Join-Path $Path $dll) -Value 'presence-check fixture'
     }
     $deps = @{runtimeTarget=@{name='.NETCoreApp,Version=v10.0'}; targets=@{
         '.NETCoreApp,Version=v10.0'=@{'Transitive/1.0'=@{runtime=@{'lib/net8.0/System.Collections.Immutable.dll'=@{}}}}
     }}
-    $deps | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $Path 'Bimwright.Dwg.Plugin.Acad27.deps.json')
+    $deps | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $Path 'TbcAcadMcp.Plugin.Acad27.deps.json')
 }
 try {
     foreach ($year in 2025..2027) {
@@ -82,7 +82,7 @@ try {
         finally { Set-Content -LiteralPath $path -Value $contents }
     }
     Test 'Modern payload requires its dependency manifest' {
-        $path = Join-Path $repoPayload 'Bimwright.Dwg.Plugin.Acad27.deps.json'
+        $path = Join-Path $repoPayload 'TbcAcadMcp.Plugin.Acad27.deps.json'
         $contents = Get-Content -LiteralPath $path -Raw
         Remove-Item -LiteralPath $path
         try { Assert-Throws { Assert-RepoPayload $fixtureRepo 2027 Release } 'deps.json' }
@@ -109,7 +109,7 @@ try {
     }
     $legacyPayload = Join-Path $testRoot 'net48'
     New-Item -ItemType Directory -Path $legacyPayload -Force | Out-Null
-    $legacyDlls = @($runtimeDlls) + @('Bimwright.Dwg.Plugin.Acad24.dll', 'System.Buffers.dll',
+    $legacyDlls = @($runtimeDlls) + @('TbcAcadMcp.Plugin.Acad24.dll', 'System.Buffers.dll',
         'System.Collections.Immutable.dll', 'System.Memory.dll', 'System.Numerics.Vectors.dll',
         'System.Reflection.Metadata.dll', 'System.Runtime.CompilerServices.Unsafe.dll',
         'System.Text.Encoding.CodePages.dll', 'System.Threading.Tasks.Extensions.dll')

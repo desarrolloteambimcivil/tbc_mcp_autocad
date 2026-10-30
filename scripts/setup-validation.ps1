@@ -36,9 +36,9 @@ function Assert-SetupRelativePath([string]$Path) {
 
 function Assert-SetupManifest([string]$Root, $Manifest) {
     if (-not $Manifest) { throw 'Setup manifest.json is required for a packaged layout.' }
-    if ($Manifest.name -ne 'DwgMcp.Setup' -or $Manifest.platform -ne 'win-x64' -or
+    if ($Manifest.name -ne 'TbcAcadMcp.Setup' -or $Manifest.platform -ne 'win-x64' -or
         $Manifest.version -notmatch '^v?\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$') { throw 'Invalid Setup identity/version/platform.' }
-    if ($Manifest.server.command -ne 'server/dwg-mcp.exe' -or $Manifest.server.selfContained -isnot [bool] -or
+    if ($Manifest.server.command -ne 'server/tbc-acad-mcp.exe' -or $Manifest.server.selfContained -isnot [bool] -or
         $Manifest.server.requiresDotnet -isnot [bool] -or $Manifest.server.selfContained -ne $true -or $Manifest.server.requiresDotnet -ne $false) {
         throw 'Setup server contract is invalid.'
     }
@@ -63,7 +63,7 @@ function Assert-SetupManifest([string]$Root, $Manifest) {
         $relative = $path.Substring($prefix.Length).Replace('\', '/')
         if ($relative -ne 'manifest.json' -and -not $listed.Contains($relative)) { throw "Unlisted Setup file: $relative" }
     }
-    foreach ($required in @('install.ps1', 'plugin-payload.ps1', 'setup-validation.ps1', 'server/dwg-mcp.exe', 'bundle/PackageContents.xml')) {
+    foreach ($required in @('install.ps1', 'plugin-payload.ps1', 'setup-validation.ps1', 'server/tbc-acad-mcp.exe', 'bundle/PackageContents.xml')) {
         if (-not $listed.Contains($required)) { throw "Setup manifest omits required file: $required" }
     }
     $years = @($Manifest.packedAutocadYears)
@@ -75,10 +75,10 @@ function Assert-SetupManifest([string]$Root, $Manifest) {
     if (@(Compare-Object @($years | Sort-Object) @($actual | Sort-Object)).Count -or
         @(Compare-Object @($years | Sort-Object) @($Manifest.supportedAutocadYears | Sort-Object)).Count) { throw 'Setup manifest years differ from included payloads.' }
     [xml]$xml = [IO.File]::ReadAllText((Join-Path $Root 'bundle/PackageContents.xml'))
-    if ([string]$xml.ApplicationPackage.ProductCode -ne '{8A3F7B2D-1C4E-4D5F-9A6B-7E8C9D0F1A2B}') { throw 'Foreign Setup bundle ProductCode.' }
+    if ([string]$xml.ApplicationPackage.ProductCode -ne '{747893C2-E164-4AB3-AADF-396F82C9C929}') { throw 'Foreign Setup bundle ProductCode.' }
     $xmlYears = @($xml.ApplicationPackage.Components | ForEach-Object {
         $module = [string]$_.ComponentEntry.ModuleName
-        if ($module -notmatch '^\./Contents/(202[2-7])/Bimwright\.Dwg\.Plugin\.Acad(\d{2})\.dll$' -or
+        if ($module -notmatch '^\./Contents/(202[2-7])/TbcAcadMcp\.Plugin\.Acad(\d{2})\.dll$' -or
             [int]$Matches[2] -ne ([int]$Matches[1] - 2000)) { throw "Invalid Setup bundle module: $module" }
         [int]$Matches[1]
     })
@@ -87,7 +87,7 @@ function Assert-SetupManifest([string]$Root, $Manifest) {
 
 function Assert-SetupArchive([string]$ZipPath, [string]$ReleaseTag, [string]$Root) {
     if ($ReleaseTag -notmatch '^v\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$' -or
-        [IO.Path]::GetFileName($ZipPath) -cne "DwgMcp.Setup-$ReleaseTag-win-x64.zip") { throw 'Setup ZIP must match the exact release tag.' }
+        [IO.Path]::GetFileName($ZipPath) -cne "TbcAcadMcp.Setup-$ReleaseTag-win-x64.zip") { throw 'Setup ZIP must match the exact release tag.' }
     Assert-SetupPlainPath $ZipPath
     Assert-SetupPlainPath ($ZipPath + '.sha256')
     $sidecar = [IO.File]::ReadAllText($ZipPath + '.sha256').Trim()
