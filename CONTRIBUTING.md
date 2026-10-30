@@ -1,4 +1,4 @@
-# Contributing to dwg-mcp
+# Contributing to tbc-acad-mcp
 
 Contributions are welcome. This document covers the basics.
 

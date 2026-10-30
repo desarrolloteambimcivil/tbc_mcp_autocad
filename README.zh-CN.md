@@ -1,15 +1,19 @@
-<!-- mcp-name: io.github.bimwright/dwg-mcp -->
+<!-- mcp-name: io.github.desarrolloteambimcivil/tbc-acad-mcp -->
+
+<h1 align="center">tbc-acad-mcp</h1>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/bimwright/.github/master/assets/logos/dwg-mcp.png" alt="dwg-mcp" width="180" />
+  面向 Autodesk AutoCAD 与 Civil 3D 的 MCP 网关 — 让 AI 代理读取和编辑 DWG 图纸
 </p>
 
-<h1 align="center">dwg-mcp</h1>
+<p align="center">
+  作者：Nour Rouas — TeamBIMCivil 的 BIM 开发者/建模师
+</p>
 
 <p align="center">
-  <a href="https://github.com/bimwright/dwg-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/dwg-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
+  <a href="https://github.com/desarrolloteambimcivil/tbc_mcp_autocad/actions/workflows/build.yml"><img src="https://github.com/desarrolloteambimcivil/tbc_mcp_autocad/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
-  <a href="#支持的-autocad-版本"><img src="https://img.shields.io/badge/AutoCAD-2022--2027-186BFF" alt="AutoCAD 2022-2027" /></a>
+  <a href="#支持的-autocad-版本"><img src="https://img.shields.io/badge/AutoCAD%20%2F%20Civil%203D-2022--2027-186BFF" alt="AutoCAD / Civil 3D 2022-2027" /></a>
   <a href="#tools"><img src="https://img.shields.io/badge/MCP-45%20default%20%2B%20optional-6C47FF" alt="MCP tools" /></a>
 </p>
 
@@ -19,57 +23,18 @@
 
 ---
 
-## 图纸翻译不应止步于手工复制粘贴
+## tbc-acad-mcp 是什么
 
-施工与工程图纸承载着密集的技术文字——规格说明、注释、尺寸、材料标注、图例。当这些图纸以外语形式送达时，翻译不是可有可无的，而是项目团队动手之前必须完成的工作。
+`tbc-acad-mcp` 是由 Nour Rouas 维护的 [bimwright/dwg-mcp](https://github.com/bimwright/dwg-mcp) 分支。它是 TBC-MCP 套件中的 AutoCAD 部分，与 [tbc-revit-mcp](https://github.com/desarrolloteambimcivil/tbc_mcp_revit) 配合使用：代理可以从 AutoCAD 或 Civil 3D 中的 DWG 图纸读取图层、几何、文字、引线和块属性，并在 Revit 中使用这些信息。
 
-常见的流程非常痛苦：逐个元素选中文字，复制到翻译器，再粘贴回去，然后修补字体（因为 SHX 字体无法显示越南语或中日韩文字），调整高度，还得祈祷布局没有偏移。再乘以每张图纸数百个文字片段、每个项目数十张图纸。
+`tbc-acad-mcp` 是 MCP 客户端与正在运行的 AutoCAD 会话之间的**本地**桥梁，由两部分组成：
 
-`dwg-mcp` 存在的意义，就是把这个冗长循环压缩成两步：选中文字，让 AI agent 读取、翻译，并就地改写——字体正确、高度正确、空间分组正确，且只需一次撤销。
+- **tbc-acad-mcp.exe**：由 Claude Code、Cursor、OpenCode 或其他 stdio MCP 客户端启动的 .NET 8 MCP 服务器。
+- **TbcAcadMcp.Plugin.AcadNN**：按版本区分的插件外壳，加载在 AutoCAD（及 Civil 3D）中，对图纸数据库执行命令。
 
----
+服务器与插件之间，AutoCAD 2022–2024 使用 TCP NDJSON，2025–2027 使用命名管道（回环，无防火墙提示）。一切都在你的机器上运行。
 
-## dwg-mcp 是什么
-
-`dwg-mcp` 是一个面向 Autodesk AutoCAD 2022–2027 DWG 工作流的本地 MCP gateway。
-
-它由两部分组成：
-
-- **Bimwright.Dwg.Server**：一个 .NET 8 MCP server，由 Claude Code、Cursor、OpenCode 或其他 stdio MCP client 启动。
-- **Bimwright.Dwg.Plugin**：按版本拆分的 AutoCAD add-in shells，加载在 AutoCAD 内部，针对图形数据库执行命令。
-
-Agent 说 MCP。Server 通过本地链路和 plugin 通信：AutoCAD 2022–2024 走 TCP NDJSON，2025–2027 走 Named Pipe（loopback，避免防火墙弹窗）。Plugin 则调用 AutoCAD .NET API。
-
-一切都在你的机器上完成。
-
----
-
-## 为什么它重要
-
-AI agent 让“把选中的文字全部翻译成越南语”这类意图可以正确发生在图纸里。但仅有意图还不够。AutoCAD 文字操作需要理解空间布局、片段分组、字体限制、MText 与 DBText 的差异、块参照，以及高度缩放。
-
-`dwg-mcp` 负责处理这些复杂性：
-
-- **空间聚类（Spatial clustering）** 把碎片化的文字按逻辑聚合成完整句子（按块、行、列、段落）。
-- **自动字体处理** 创建一个支持 Unicode 的文字样式并应用——再也不会出现 SHX 问号。
-- **高度缩放** 补偿拉丁文字与中日韩文字在视觉密度上的差异。
-- **MText 转换** 在安全的前提下，把单行片段升级为多行文字。
-- **单次撤销** 把每个操作包在事务（transaction）中。
-
----
-
-## 使用证据
-
-在 19 天的生产施工图纸实际使用期间，完成了 220 次工具调用，成功率 98.2%。
-
-| 工具 | 调用次数 |
-|------|---------|
-| get_selected_texts | ~100 |
-| translate_and_rewrite | ~77 |
-| send_code | ~28 |
-| collapse_and_rewrite | ~11 |
-| update_texts | ~10 |
-| apply_unicode_style | ~4 |
+目前该分支新增了在 Civil 3D 及其他基于 AutoCAD 的产品中加载的能力和独立的产品标识。上游的文字翻译工作流（空间聚类、Unicode 文字样式、原位重写）保持不变。参见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
@@ -84,7 +49,7 @@ AI agent 让“把选中的文字全部翻译成越南语”这类意图可以�
               | stdio MCP
               v
 +---------------------------+
-| Bimwright.Dwg.Server      |
+| tbc-acad-mcp.exe          |
 | .NET 8 / C#               |
 +---------------------------+
               |
@@ -92,7 +57,7 @@ AI agent 让“把选中的文字全部翻译成越南语”这类意图可以�
                | token auth
               v
 +---------------------------+
-| Bimwright.Dwg.Plugin      |
+| TbcAcadMcp.Plugin         |
 | AutoCAD 2022-2027 shells |
 +---------------------------+
               |
@@ -110,9 +75,9 @@ AI agent 让“把选中的文字全部翻译成越南语”这类意图可以�
 
 ## 安装
 
-从 [GitHub Releases](https://github.com/bimwright/dwg-mcp/releases/latest) 下载 setup ZIP（`DwgMcp.Setup-*-win-x64.zip`）。请查看已下载ZIP内 `manifest.json` 的 `packedAutocadYears` 和 bundle 的 `PackageContents.xml`，确认实际包含哪些年份的插件；在运行中的AutoCAD上已验证的年份请查阅发行说明。源码提供2022–2027的shell，但打包插件和实机验证范围取决于具体版本。未包含的年份需要用对应的AutoCAD SDK从源码构建插件。解压后运行 `install.ps1`（完整命令见英文 README）。
+从 [GitHub Releases](https://github.com/desarrolloteambimcivil/tbc_mcp_autocad/releases/latest) 下载 setup ZIP（`TbcAcadMcp.Setup-*-win-x64.zip`）。请查看已下载ZIP内 `manifest.json` 的 `packedAutocadYears` 和 bundle 的 `PackageContents.xml`，确认实际包含哪些年份的插件；在运行中的AutoCAD上已验证的年份请查阅发行说明。源码提供2022–2027的shell，但打包插件和实机验证范围取决于具体版本。未包含的年份需要用对应的AutoCAD SDK从源码构建插件。解压后运行 `install.ps1`（完整命令见英文 README）。
 
-不要 `dotnet tool install -g Bimwright.Dwg.Server`。
+不要 `dotnet tool install -g TbcAcadMcp.Server`。
 
 **开发者：** 本地 build 后 `pwsh scripts/install.ps1 -Version 2024`，或 `NETLOAD` Debug DLL。
 
@@ -123,8 +88,8 @@ AI agent 让“把选中的文字全部翻译成越南语”这类意图可以�
 ```json
 {
   "mcpServers": {
-    "bimwright-dwg": {
-      "command": "bimwright-dwg",
+    "tbc-acad-mcp": {
+      "command": "tbc-acad-mcp",
       "args": []
     }
   }
@@ -142,29 +107,29 @@ AI agent 让“把选中的文字全部翻译成越南语”这类意图可以�
 ```json
 {
   "mcpServers": {
-    "bimwright-dwg": {
-      "command": "bimwright-dwg",
+    "tbc-acad-mcp": {
+      "command": "tbc-acad-mcp",
       "args": ["--target", "pid:12345"]
     }
   }
 }
 ```
 
-使用 `--read-only` 去掉可写 toolset。使用 `--toolsets all`，或显式列表且**包含**你需要的默认项（自定义列表会**替换**默认集合，例如 `query,modify,meta,view,annotation`）。环境变量：`BIMWRIGHT_DWG_TOOLSETS=…`。
+使用 `--read-only` 去掉可写 toolset。使用 `--toolsets all`，或显式列表且**包含**你需要的默认项（自定义列表会**替换**默认集合，例如 `query,modify,meta,view,annotation`）。环境变量：`TBC_ACAD_MCP_TOOLSETS=…`。
 
-`dwg_send_code` 通过 `meta` 默认注册。用 `--enable-send-code` / `--disable-send-code` 控制 server（JSON `enableSendCode`；环境变量 `BIMWRIGHT_DWG_ENABLE_SEND_CODE`）。禁用时，含 C# 的批处理会在发送任何命令前整体拒绝。`MCPDISABLECODE` / `MCPENABLECODE` 只控制 AutoCAD 会话侧，不能覆盖 server 的禁用设置。`dwg_run_lisp` 保留注册以兼容旧客户端，但 server 和 plugin 均拒绝所有请求。此版本没有 LISP 隔离执行环境或脚本信任机制。`--read-only` 会移除这两个工具。
+`dwg_send_code` 通过 `meta` 默认注册。用 `--enable-send-code` / `--disable-send-code` 控制 server（JSON `enableSendCode`；环境变量 `TBC_ACAD_MCP_ENABLE_SEND_CODE`）。禁用时，含 C# 的批处理会在发送任何命令前整体拒绝。`MCPDISABLECODE` / `MCPENABLECODE` 只控制 AutoCAD 会话侧，不能覆盖 server 的禁用设置。`dwg_run_lisp` 保留注册以兼容旧客户端，但 server 和 plugin 均拒绝所有请求。此版本没有 LISP 隔离执行环境或脚本信任机制。`--read-only` 会移除这两个工具。
 
 `dwg_send_code` 仅接受内联同步片段，执行前拒绝 `async`/`await` 和 `#load` 指令。AutoCAD API 必须留在调用线程，不要移至 `Task.Run` 或其他线程。只返回 JSON DTO，嵌套的 AutoCAD/COM 对象也会被拒绝。`dwg_inspect_lisp` 仍可用于静态分析；超过 2,000,000 字符的源码因无法完整检查而被标记为危险，200 条 findings 的显示上限不会停止危险级别检测。正则匹配设有超时；超时扫描会报告检查不完整并标记为危险，不会返回 `clean`。
 
 ---
 
-调用日志**默认关闭**。用 `--enable-call-log` / `--disable-call-log`（JSON `enableCallLog`；环境变量 `BIMWRIGHT_DWG_ENABLE_CALL_LOG`）切换。优先级为 JSON → 环境变量 → CLI；同一开关对中最后出现的 flag 生效。关闭时不创建或追加调用日志、调用 journal，也不删除旧日志。开启时，`%LOCALAPPDATA%\Bimwright\dwg-mcp\dwg-mcp-calls.jsonl` 仅记录脱敏参数及耗时/成败元数据，不记录响应。code 字段（包括嵌套 batch）仅含字符长度和原始 UTF-8 body 的 SHA-256；可能回显 source 的代码相关错误正文被省略。尚未实现代码 body cache 或 body journal。ToolBaker adaptive usage、诊断日志和内存 History 是独立功能；plugin 没有持久化调用日志 writer。
+调用日志**默认关闭**。用 `--enable-call-log` / `--disable-call-log`（JSON `enableCallLog`；环境变量 `TBC_ACAD_MCP_ENABLE_CALL_LOG`）切换。优先级为 JSON → 环境变量 → CLI；同一开关对中最后出现的 flag 生效。关闭时不创建或追加调用日志、调用 journal，也不删除旧日志。开启时，`%LOCALAPPDATA%\NourRouas\tbc-acad-mcp\tbc-acad-mcp-calls.jsonl` 仅记录脱敏参数及耗时/成败元数据，不记录响应。code 字段（包括嵌套 batch）仅含字符长度和原始 UTF-8 body 的 SHA-256；可能回显 source 的代码相关错误正文被省略。尚未实现代码 body cache 或 body journal。ToolBaker adaptive usage、诊断日志和内存 History 是独立功能；plugin 没有持久化调用日志 writer。
 
 ## 活动通知与 History
 
-通知默认开启，使用不抢占键盘焦点的单张卡片，显示 `dwg-mcp <年份>`、最新工具名称和 **Success · Failed · Capture** 计数。数字按里程表方式滚动；图像在固定框内居中，至少保留5秒，以 cross-fade 切换。关闭 Windows **Animation effects** 后即时更新。悬停暂停关闭；空闲时间可选10/20/30/60秒（默认20秒）。AutoCAD 最小化或有模态窗口时保留计数，恢复可用后显示。`MCPTOAST` 切换通知，`MCPSETTINGS` 设置通知及品牌标识。Branding 默认关闭，仅悬停时显示，重启后保留选择；保存失败会提示，但本次会话的选择仍生效。
+通知默认开启，使用不抢占键盘焦点的单张卡片，显示 `tbc-acad-mcp <年份>`、最新工具名称和 **Success · Failed · Capture** 计数。数字按里程表方式滚动；图像在固定框内居中，至少保留5秒，以 cross-fade 切换。关闭 Windows **Animation effects** 后即时更新。悬停暂停关闭；空闲时间可选10/20/30/60秒（默认20秒）。AutoCAD 最小化或有模态窗口时保留计数，恢复可用后显示。`MCPTOAST` 切换通知，`MCPSETTINGS` 设置通知及品牌标识。Branding 默认关闭，仅悬停时显示，重启后保留选择；保存失败会提示，但本次会话的选择仍生效。
 
-点击卡片主体打开／聚焦 **History** 并关闭卡片；×只关闭；点击缩略图打开 allowlist 允许的图像并关闭卡片。`MCPHISTORY` 打开同一非模态窗口。History 在内存中保留插件处理调用的最近1,000条简短结果，通知关闭时仍记录；支持搜索、Success/Failed 和 Read/Write 筛选、耗时及选中行详情。关闭卡片不清空历史，**New session** 清空列表。不新增持久日志，不保留原始输入、代码正文或 JSON 结果。尚不包含仅在服务器执行的工具通知。`enableToast`、`toastIdleSeconds`、`showBranding` 保存于 `%LOCALAPPDATA%\Bimwright\dwg-mcp\settings.json`。
+点击卡片主体打开／聚焦 **History** 并关闭卡片；×只关闭；点击缩略图打开 allowlist 允许的图像并关闭卡片。`MCPHISTORY` 打开同一非模态窗口。History 在内存中保留插件处理调用的最近1,000条简短结果，通知关闭时仍记录；支持搜索、Success/Failed 和 Read/Write 筛选、耗时及选中行详情。关闭卡片不清空历史，**New session** 清空列表。不新增持久日志，不保留原始输入、代码正文或 JSON 结果。尚不包含仅在服务器执行的工具通知。`enableToast`、`toastIdleSeconds`、`showBranding` 保存于 `%LOCALAPPDATA%\NourRouas\tbc-acad-mcp\settings.json`。
 
 ---
 
@@ -176,7 +141,7 @@ GitHub 检查将两个 component 与同一 stable release/tag 比较，共享 5 
 
 检查两个 `update.components`、完整通知、`lookup_reason`、`protected_component_reasons` 和 `unobserved_components`。`UPDATE_CHECK_UNAVAILABLE` 是外部 lookup 失败，不是 runtime 故障或安装授权请求；`LOCAL_VERSION_AHEAD` 仅是信息，不得降级。只有 `prepare_update` 且 `bundle_update_proposal_allowed=true` 才能提出更新，安装仍需授权。health 不下载 package、安装、修改 client config、保存/关闭图纸或重启进程。
 
-reconnect 后，在同一连接上将新的 initialize 与 `tools/list` 的 `_meta["bimwright/dwg-mcp/runtime"]`、schema、annotations 对照 `client_verification`；server 无法证明 client cache 已刷新。read-only 下仍可用，因 GitHub 选项而设置 `openWorldHint=true`。参见 [agent guide](AGENTS.md)。已发布 v2.0.1 不包含此功能。host-free protocol 和 2024/2027 plugin build 已验证，实际 AutoCAD 验收待完成。
+reconnect 后，在同一连接上将新的 initialize 与 `tools/list` 的 `_meta["desarrolloteambimcivil/tbc_mcp_autocad/runtime"]`、schema、annotations 对照 `client_verification`；server 无法证明 client cache 已刷新。read-only 下仍可用，因 GitHub 选项而设置 `openWorldHint=true`。参见 [agent guide](AGENTS.md)。已发布 v2.0.1 不包含此功能。host-free protocol 和 2024/2027 plugin build 已验证，实际 AutoCAD 验收待完成。
 
 ## Tools
 
@@ -220,7 +185,7 @@ development 默认启动暴露 45 个工具：query（含 `dwg_get_drawing_profi
 | `dwg_erase_entities` | 擦除由十六进制 handle 标识的实体 |
 | `dwg_offset_entities` | 偏移曲线实体并返回生成的 handle |
 | `dwg_translate_and_rewrite` | **首选。** 把翻译后的文字写回：锚定、删除、MText、字体、高度 |
-| `dwg_apply_unicode_style` | 确保 `Bimwright_Unicode` 样式存在并应用到目标实体 |
+| `dwg_apply_unicode_style` | 确保 `TBC_Unicode` 样式存在并应用到目标实体 |
 | `dwg_collapse_and_rewrite` | 具有显式几何控制能力的底层改写原语 |
 | `dwg_list_available_targets` | 列出每个实例的 PID、目标 ID 和进程启动时间 |
 | `dwg_get_current_target` | 显示绑定状态、代次、PID 和已确认的图纸 |
@@ -354,8 +319,8 @@ development 默认启动暴露 45 个工具：query（含 `dwg_get_drawing_profi
 
 1. 运行 `dwg_get_drawing_info`。
 2. 运行 `dwg_list_layers`。
-3. 用 `dwg_create_layer` 创建 `BIMWRIGHT_TEST`。
-4. 在 `BIMWRIGHT_TEST` 上用 `dwg_create_point`、`dwg_create_polyline`、`dwg_create_rectangle`、`dwg_create_arc` 和 `dwg_create_ellipse` 创建一个点、多段线、矩形、圆弧和椭圆；记录返回的十六进制 handle，并预留一条曲线（例如圆弧或椭圆）用于颜色和偏移检查。
+3. 用 `dwg_create_layer` 创建 `TBC_TEST`。
+4. 在 `TBC_TEST` 上用 `dwg_create_point`、`dwg_create_polyline`、`dwg_create_rectangle`、`dwg_create_arc` 和 `dwg_create_ellipse` 创建一个点、多段线、矩形、圆弧和椭圆；记录返回的十六进制 handle，并预留一条曲线（例如圆弧或椭圆）用于颜色和偏移检查。
 5. 用 `dwg_query_entities`、`dwg_count_entities`、`dwg_select_by_layer` 和 `dwg_select_by_type` 按图层和类型查询、统计并选择这些实体；确认 select 工具返回 handle 列表且不会改变 pickfirst 选择。
 6. 用 `dwg_move_entities`、`dwg_rotate_entities` 和 `dwg_scale_entities` 移动、旋转和缩放非预留的临时实体。
 7. 用 `dwg_copy_entities` 复制一条非预留的临时实体，再用 `dwg_erase_entities` 仅擦除那条可丢弃的复制临时实体。
@@ -454,7 +419,7 @@ rewrite成功时，`final_text_height` 表示 `new_handle` 对应entity的实际
 ## 项目结构
 
 ```
-dwg-mcp/
+tbc-acad-mcp/
 ├── src/
 │   ├── Bimwright.Dwg.sln
 │   ├── server/            # .NET 8 MCP server（global tool）
@@ -473,23 +438,18 @@ dwg-mcp/
 
 ---
 
-## bimwright 家族
+## TBC-MCP 与上游项目
 
-连接 AI 助手与 BIM、CAD 应用的开源工具。
+- [**tbc-revit-mcp**](https://github.com/desarrolloteambimcivil/tbc_mcp_revit) — Autodesk® Revit®（[bimwright/rvt-mcp](https://github.com/bimwright/rvt-mcp) 的分支）
+- [**tbc-acad-mcp**](https://github.com/desarrolloteambimcivil/tbc_mcp_autocad) — Autodesk® AutoCAD® 与 Civil 3D®（[bimwright/dwg-mcp](https://github.com/bimwright/dwg-mcp) 的分支）
 
-**bimwright** 这个名字由 **BIM** 和 **wright** 组成。wright 是英语中表示制作者或建造者的旧词，如 *shipwright*（造船工）。
-
-- [**rvt-mcp**](https://github.com/bimwright/rvt-mcp) —— Autodesk® Revit®
-- [**dwg-mcp**](https://github.com/bimwright/dwg-mcp) —— Autodesk® AutoCAD®
-- [**nwd-mcp**](https://github.com/bimwright/nwd-mcp) —— Autodesk® Navisworks®
-- [**ipt-mcp**](https://github.com/bimwright/ipt-mcp) —— Autodesk® Inventor®
-- [**bim-wiki**](https://github.com/bimwright/bim-wiki) —— 越南语优先的 BIM 知识库
+两者都基于 Khoa Le 的开源 [bimwright](https://github.com/bimwright) 网关。感谢原作者。
 
 ---
 
 ## 免责声明
 
-AutoCAD 和 Autodesk 是 Autodesk, Inc. 的注册商标。bimwright 是一个独立的开源项目，与 Autodesk, Inc. 无关联、无赞助、无背书。
+AutoCAD 和 Autodesk 是 Autodesk, Inc. 的注册商标。tbc-acad-mcp 是一个独立的开源项目，与 Autodesk, Inc. 无关联、无赞助、无背书。
 
 ---
 
@@ -503,32 +463,32 @@ AutoCAD 和 Autodesk 是 Autodesk, Inc. 的注册商标。bimwright 是一个独
 
 除 `dwg_send_code` 外，每个工具都显式声明 read-only、destructive、idempotent 和 open-world 标记。完整模式有 69 个工具；默认只读模式有 17 个，`--toolsets all --read-only` 提供下列 23 个只读工具。缩放可能改变临时界面状态。只读模式会移除目标切换工具；截图、区域查看和视图恢复也因创建图片文件而被移除。`dwg_health` 为只读工具，显式更新检查可以访问 GitHub。
 
-仅为需要的工具设置精确权限规则。避免 `mcp__dwg-mcp__*` 通配规则，因为它也允许修改图纸、写文件和执行代码。`dwg_send_code` 没有 annotations，且不在此只读列表中；持久允许执行它必须由用户在 MCP 客户端中明确选择。
+仅为需要的工具设置精确权限规则。避免 `mcp__tbc-acad-mcp__*` 通配规则，因为它也允许修改图纸、写文件和执行代码。`dwg_send_code` 没有 annotations，且不在此只读列表中；持久允许执行它必须由用户在 MCP 客户端中明确选择。
 
 <!-- read-only-allowlist:start -->
 ```text
-mcp__dwg-mcp__dwg_count_entities
-mcp__dwg-mcp__dwg_create_bake_issue_draft
-mcp__dwg-mcp__dwg_get_block_attributes
-mcp__dwg-mcp__dwg_get_current_target
-mcp__dwg-mcp__dwg_get_drawing_info
-mcp__dwg-mcp__dwg_get_drawing_profile
-mcp__dwg-mcp__dwg_get_entity_properties
-mcp__dwg-mcp__dwg_get_selected_texts
-mcp__dwg-mcp__dwg_get_variables
-mcp__dwg-mcp__dwg_health
-mcp__dwg-mcp__dwg_inspect_lisp
-mcp__dwg-mcp__dwg_list_available_targets
-mcp__dwg-mcp__dwg_list_bake_suggestions
-mcp__dwg-mcp__dwg_list_baked_tools
-mcp__dwg-mcp__dwg_list_blocks
-mcp__dwg-mcp__dwg_list_layers
-mcp__dwg-mcp__dwg_list_recent_drawings
-mcp__dwg-mcp__dwg_query_entities
-mcp__dwg-mcp__dwg_select_by_layer
-mcp__dwg-mcp__dwg_select_by_type
-mcp__dwg-mcp__dwg_zoom_extents
-mcp__dwg-mcp__dwg_zoom_to_entity
-mcp__dwg-mcp__dwg_zoom_window
+mcp__tbc-acad-mcp__dwg_count_entities
+mcp__tbc-acad-mcp__dwg_create_bake_issue_draft
+mcp__tbc-acad-mcp__dwg_get_block_attributes
+mcp__tbc-acad-mcp__dwg_get_current_target
+mcp__tbc-acad-mcp__dwg_get_drawing_info
+mcp__tbc-acad-mcp__dwg_get_drawing_profile
+mcp__tbc-acad-mcp__dwg_get_entity_properties
+mcp__tbc-acad-mcp__dwg_get_selected_texts
+mcp__tbc-acad-mcp__dwg_get_variables
+mcp__tbc-acad-mcp__dwg_health
+mcp__tbc-acad-mcp__dwg_inspect_lisp
+mcp__tbc-acad-mcp__dwg_list_available_targets
+mcp__tbc-acad-mcp__dwg_list_bake_suggestions
+mcp__tbc-acad-mcp__dwg_list_baked_tools
+mcp__tbc-acad-mcp__dwg_list_blocks
+mcp__tbc-acad-mcp__dwg_list_layers
+mcp__tbc-acad-mcp__dwg_list_recent_drawings
+mcp__tbc-acad-mcp__dwg_query_entities
+mcp__tbc-acad-mcp__dwg_select_by_layer
+mcp__tbc-acad-mcp__dwg_select_by_type
+mcp__tbc-acad-mcp__dwg_zoom_extents
+mcp__tbc-acad-mcp__dwg_zoom_to_entity
+mcp__tbc-acad-mcp__dwg_zoom_window
 ```
 <!-- read-only-allowlist:end -->

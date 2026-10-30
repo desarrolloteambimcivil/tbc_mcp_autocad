@@ -6,10 +6,10 @@
 MCP client (Claude Code / Cursor / OpenCode / ...)
         |  stdio (NDJSON MCP)
         v
-Bimwright.Dwg.Server  (.NET 8 console app, global tool)
+tbc-acad-mcp.exe      (.NET 8 console app; project Bimwright.Dwg.Server)
         |  TCP (2022-2024) or named pipe (2025-2027), NDJSON + token auth, loopback only
         v
-Bimwright.Dwg.Plugin  (AutoCAD 2022-2027 shells)
+TbcAcadMcp.Plugin.AcadNN (AutoCAD 2022-2027 shells)
         |  main-thread dispatch (Application.Idle), then Document.LockDocument()
         v
 AutoCAD .NET API  (ObjectARX 2022-2027)
@@ -25,9 +25,9 @@ After its listener is ready, the plugin publishes a per-instance descriptor and 
 
 | AutoCAD | Discovery file | Transport |
 |---------|----------------|-----------|
-| 2022-2024 | `%LOCALAPPDATA%\Bimwright\dwg-mcp\acad-YYYY-PID.json`, plus `acad-YYYY.json` | TCP loopback. The server also accepts named-pipe discovery. |
-| 2025-2027 | `%LOCALAPPDATA%\Bimwright\dwg-mcp\acad-YYYY-PID.json`, plus `acad-YYYY.json` | Named pipe (`ACAD2025_OR_GREATER`). 2025 and 2026 are not binary-compatible with 2027. |
-| 2024 only | `%LOCALAPPDATA%\Bimwright\portAcad24.txt` | TCP legacy fallback |
+| 2022-2024 | `%LOCALAPPDATA%\NourRouas\tbc-acad-mcp\acad-YYYY-PID.json`, plus `acad-YYYY.json` | TCP loopback. The server also accepts named-pipe discovery. |
+| 2025-2027 | `%LOCALAPPDATA%\NourRouas\tbc-acad-mcp\acad-YYYY-PID.json`, plus `acad-YYYY.json` | Named pipe (`ACAD2025_OR_GREATER`). 2025 and 2026 are not binary-compatible with 2027. |
+| 2024 only | `%LOCALAPPDATA%\NourRouas\portAcad24.txt` | TCP legacy fallback |
 
 The current publisher writes schema v3, including the process start time used to detect PID reuse. A TCP descriptor has this shape:
 
@@ -48,7 +48,7 @@ The current publisher writes schema v3, including the process start time used to
 }
 ```
 
-`AuthToken` reads and deduplicates discovery entries, checks process identity and supports `--target`, `BIMWRIGHT_DWG_TARGET`, and `dwg_switch_target` selectors: a calendar year (`2022`–`2027`), `pid:<PID>`, or `id:acad-<year>-<PID>`. More than one matching instance returns `AMBIGUOUS_TARGET`; the gateway does not choose the newest instance. Legacy year descriptors and the AutoCAD 2024 text descriptor remain compatibility inputs.
+`AuthToken` reads and deduplicates discovery entries, checks process identity and supports `--target`, `TBC_ACAD_MCP_TARGET`, and `dwg_switch_target` selectors: a calendar year (`2022`–`2027`), `pid:<PID>`, or `id:acad-<year>-<PID>`. More than one matching instance returns `AMBIGUOUS_TARGET`; the gateway does not choose the newest instance. Legacy year descriptors and the AutoCAD 2024 text descriptor remain compatibility inputs.
 
 One gateway lifetime owns one `TargetBinding`. Calls capture its generation, and `PluginClient` checks that generation and process identity immediately before writing transport bytes. Losing a bound process does not select a replacement. Changing an existing instance binding requires an explicit `pid:`/`id:` selector; leaving a live confirmed target also requires `rebind=true`. `dwg_switch_target` verifies authenticated health and the active drawing by default. `verify=false` permits reads only and removes write confirmation. For the same process it retains the previous expected drawing lifetime ID unless `rebind=true` resets it or an explicit `expected_document_id` replaces it. An explicit `expected_document_id` supplied with `verify=false` is retained for later verification. Confirming a different drawing, including a reopened file with a new lifetime ID, requires a matching explicit `expected_document_id` or `rebind=true`. Failed verification preserves the previous binding. The plugin checks the process before dispatch and the drawing under its document lock before the handler runs.
 
@@ -58,10 +58,10 @@ The gateway and plugin currently have separate configuration readers and files:
 
 | Owner | File | Scope |
 |-------|------|-------|
-| `DwgMcpConfig` in the gateway | `%LOCALAPPDATA%\Bimwright\dwg-mcp\dwgmcp.config.json` | Target, toolsets, read-only, send-code exposure, call-log files and ToolBaker exposure. `--config` selects another gateway file. |
-| `PluginSettings` in AutoCAD | `%LOCALAPPDATA%\Bimwright\dwg-mcp\settings.json` | Toast enabled state, branding, idle duration and toast position. |
+| `DwgMcpConfig` in the gateway | `%LOCALAPPDATA%\NourRouas\tbc-acad-mcp\dwgmcp.config.json` | Target, toolsets, read-only, send-code exposure, call-log files and ToolBaker exposure. `--config` selects another gateway file. |
+| `PluginSettings` in AutoCAD | `%LOCALAPPDATA%\NourRouas\tbc-acad-mcp\settings.json` | Toast enabled state, branding, idle duration and toast position. |
 
-Gateway resolution is CLI over `BIMWRIGHT_DWG_*` environment variables over JSON over code defaults. It happens at gateway startup. The plugin's toast-enabled preference also supports `BIMWRIGHT_DWG_ENABLE_TOAST` at load time. UI preference writes preserve unrelated JSON keys and refuse an existing malformed JSON object; they do not rewrite gateway settings.
+Gateway resolution is CLI over `TBC_ACAD_MCP_*` environment variables over JSON over code defaults. It happens at gateway startup. The plugin's toast-enabled preference also supports `TBC_ACAD_MCP_ENABLE_TOAST` at load time. UI preference writes preserve unrelated JSON keys and refuse an existing malformed JSON object; they do not rewrite gateway settings.
 
 `AllowLanBind` is parsed but is not implemented by the plugin; startup reports that limitation and the plugin remains local-only. `LogLevel` is parsed by `DwgMcpConfig`, but the current bootstrap does not apply it to the logging filter. Neither parsed option establishes a runtime capability.
 
@@ -203,7 +203,7 @@ Toolsets are resolved by `DwgMcpConfig` and `ToolsetFilter`:
 | `export` | `dwg_export_dxf`, and deferred `dwg_export_pdf`, `dwg_export_image` |
 | `drawing` | `dwg_get_variables`, `dwg_set_system_variable`, `dwg_save_drawing`, `dwg_purge_drawing` |
 
-`--read-only` or `BIMWRIGHT_DWG_READ_ONLY=1` removes write-capable toolsets/methods completely (`modify`, `dwg_send_code`/`dwg_run_lisp`, `annotation`, `dimension`, `dwg_batch_execute`, ToolBaker write tools, `export` tools, and `drawing` write tools).
+`--read-only` or `TBC_ACAD_MCP_READ_ONLY=1` removes write-capable toolsets/methods completely (`modify`, `dwg_send_code`/`dwg_run_lisp`, `annotation`, `dimension`, `dwg_batch_execute`, ToolBaker write tools, `export` tools, and `drawing` write tools).
 - **Block Toolset Split**: The `block` toolset splits registration between read-only `BlockTools` (`dwg_list_blocks`, `dwg_get_block_attributes`) and write-capable `BlockWriteTools` (`dwg_insert_block`, `dwg_set_block_attributes`, `dwg_explode_block`). In read-only mode, only the read-only wrappers are registered, preserving safe drawing inspection.
 - **View Navigation and Read-Only**: The `view` toolset is default-on and retains viewport navigation (`dwg_zoom_extents`, `dwg_zoom_window`, `dwg_zoom_to_entity`) in read-only mode. It strips `dwg_capture_view_image`, `dwg_inspect_view_region` and `dwg_restore_view`, which write image files.
 - **Routing and Read-Only**: `dwg_switch_target` is annotated `ReadOnly=false`, excluded from the catalog and refused by its direct server entry point in this mode. Start with `--read-only --target pid:<PID>` or `--target id:acad-<year>-<PID>` to select the initial read target. After `TARGET_LOST`/`TARGET_CHANGED`, list available targets and restart the gateway with an explicit selector; recovery never recommends the unavailable switch tool or selects a fallback instance. `dwg_open_drawing` is also excluded. Default read-only mode has 16 tools; all-enabled read-only has 22.
@@ -221,8 +221,8 @@ In a scratch DWG:
 
 1. Run `dwg_get_drawing_info`.
 2. Run `dwg_list_layers`.
-3. Create `BIMWRIGHT_TEST` with `dwg_create_layer`.
-4. Create a point, polyline, rectangle, arc, and ellipse on `BIMWRIGHT_TEST` with `dwg_create_point`, `dwg_create_polyline`, `dwg_create_rectangle`, `dwg_create_arc`, and `dwg_create_ellipse`; record the returned hex handles and reserve one curve, such as the arc or ellipse, for color and offset checks.
+3. Create `TBC_TEST` with `dwg_create_layer`.
+4. Create a point, polyline, rectangle, arc, and ellipse on `TBC_TEST` with `dwg_create_point`, `dwg_create_polyline`, `dwg_create_rectangle`, `dwg_create_arc`, and `dwg_create_ellipse`; record the returned hex handles and reserve one curve, such as the arc or ellipse, for color and offset checks.
 5. Query, count, and select those entities by layer and type with `dwg_query_entities`, `dwg_count_entities`, `dwg_select_by_layer`, and `dwg_select_by_type`; confirm select tools return handle lists and do not change pickfirst selection.
 6. Move, rotate, and scale non-reserved scratch entities with `dwg_move_entities`, `dwg_rotate_entities`, and `dwg_scale_entities`.
 7. Copy one non-reserved scratch entity with `dwg_copy_entities`, then erase only that disposable copied temp entity with `dwg_erase_entities`.
@@ -239,7 +239,7 @@ In a scratch DWG:
 
 ## ToolBaker
 
-ToolBaker storage is server-owned SQLite at `%LOCALAPPDATA%\Bimwright\dwg-mcp\baked\bake.db`. Accepting a suggestion sends the internal `apply_bake` command to the plugin for policy validation and schema smoke-test. The server redacts baked source before persistence and records usage events in the `usage_events` table for pattern detection.
+ToolBaker storage is server-owned SQLite at `%LOCALAPPDATA%\NourRouas\tbc-acad-mcp\baked\bake.db`. Accepting a suggestion sends the internal `apply_bake` command to the plugin for policy validation and schema smoke-test. The server redacts baked source before persistence and records usage events in the `usage_events` table for pattern detection.
 
 At runtime, `dwg_run_baked_tool` reads the accepted record from SQLite and sends that record to the plugin. The plugin does not own a separate registry file. V1 baked tools are declarative preset or macro records that dispatch existing `IAcadCommand` handlers; future generated-source paths must pass `BakeCompilerPolicy` before they can be enabled.
 

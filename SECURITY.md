@@ -6,7 +6,7 @@ problem. The release package's manifest states which AutoCAD plugin years it shi
 
 ## Trust boundary
 
-dwg-mcp connects a local stdio MCP client to an AutoCAD plugin through loopback TCP
+tbc-acad-mcp connects a local stdio MCP client to an AutoCAD plugin through loopback TCP
 or a local Named Pipe. Plugin requests require the session token from local
 discovery data. Protect access to that data and to the Windows account running
 AutoCAD; the token does not isolate other software running as that same user.
@@ -25,7 +25,7 @@ image-file creation; permitted view navigation can still change transient UI sta
 ## Reporting a vulnerability
 
 Avoid public issues for reports containing credentials, private drawings or exploit
-details. Use [GitHub private vulnerability reporting](https://github.com/bimwright/dwg-mcp/security/advisories/new)
+details. Use [GitHub private vulnerability reporting](https://github.com/desarrolloteambimcivil/tbc_mcp_autocad/security/advisories/new)
 when it is available. Otherwise contact the maintainer privately using the email
 in this repository's commit metadata.
 

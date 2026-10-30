@@ -1,15 +1,19 @@
-<!-- mcp-name: io.github.bimwright/dwg-mcp -->
+<!-- mcp-name: io.github.desarrolloteambimcivil/tbc-acad-mcp -->
+
+<h1 align="center">tbc-acad-mcp</h1>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/bimwright/.github/master/assets/logos/dwg-mcp.png" alt="dwg-mcp" width="180" />
+  MCP gateway for Autodesk AutoCAD and Civil 3D — read and edit DWG drawings from an AI agent
 </p>
 
-<h1 align="center">dwg-mcp</h1>
+<p align="center">
+  by Nour Rouas — BIM developer/modeller at TeamBIMCivil
+</p>
 
 <p align="center">
-  <a href="https://github.com/bimwright/dwg-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/dwg-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
+  <a href="https://github.com/desarrolloteambimcivil/tbc_mcp_autocad/actions/workflows/build.yml"><img src="https://github.com/desarrolloteambimcivil/tbc_mcp_autocad/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
-  <a href="#supported-autocad-versions"><img src="https://img.shields.io/badge/AutoCAD-2022--2027-186BFF" alt="AutoCAD 2022-2027" /></a>
+  <a href="#supported-autocad-versions"><img src="https://img.shields.io/badge/AutoCAD%20%2F%20Civil%203D-2022--2027-186BFF" alt="AutoCAD / Civil 3D 2022-2027" /></a>
   <a href="#tools"><img src="https://img.shields.io/badge/MCP-45%20default%20%2B%20optional-6C47FF" alt="MCP tools" /></a>
 </p>
 
@@ -19,57 +23,18 @@
 
 ---
 
-## Drawing Translation Should Not Stop At Manual Copy-Paste
+## What it is
 
-Construction and engineering drawings carry dense technical text — specifications, notes, dimensions, material callouts, legends. When those drawings arrive in a foreign language, translation is not optional. It is required before the project team can act.
+`tbc-acad-mcp` is a fork of [bimwright/dwg-mcp](https://github.com/bimwright/dwg-mcp) maintained by Nour Rouas. It is the AutoCAD half of the TBC-MCP suite, next to [tbc-revit-mcp](https://github.com/desarrolloteambimcivil/tbc_mcp_revit): an agent reads layers, geometry, texts, leaders and block attributes from DWG drawings in AutoCAD or Civil 3D and can use that information in Revit.
 
-The usual workflow is painful: select text one entity at a time, copy to a translator, paste back, fix the font (because SHX fonts cannot render Vietnamese or CJK), adjust the height, hope nothing shifted. Multiply by hundreds of text fragments per sheet, dozens of sheets per project.
+`tbc-acad-mcp` is a **local** bridge between an MCP client and a running AutoCAD session. It has two parts:
 
-`dwg-mcp` exists to compress that loop into two steps: select the text, let the AI agent read, translate, and rewrite it in place — with correct font, correct height, correct spatial grouping, and a single undo.
+- **tbc-acad-mcp.exe**: a .NET 8 MCP server launched by Claude Code, Cursor, OpenCode or another stdio MCP client.
+- **TbcAcadMcp.Plugin.AcadNN**: version-specific add-in shells loaded inside AutoCAD (and Civil 3D), executing commands against the drawing database.
 
----
+The server talks to the plugin over TCP NDJSON for AutoCAD 2022–2024 and a named pipe (loopback, no firewall prompt) for 2025–2027. Everything stays on your machine.
 
-## What dwg-mcp Is
-
-`dwg-mcp` is a local MCP gateway for Autodesk AutoCAD 2022-2027 DWG workflows.
-
-It has two parts:
-
-- **Bimwright.Dwg.Server**: a .NET 8 MCP server launched by Claude Code, Cursor, OpenCode, or another stdio MCP client.
-- **Bimwright.Dwg.Plugin**: version-specific AutoCAD add-in shells loaded inside AutoCAD, executing commands against the drawing database.
-
-The agent talks MCP. The server talks to the plugin over a local wire: TCP NDJSON for AutoCAD 2022–2024, and a Named Pipe (loopback, avoids the firewall prompt) for 2025–2027. The plugin talks to the AutoCAD .NET API.
-
-Everything stays on your machine.
-
----
-
-## Why It Matters
-
-AI agents make it possible to describe "translate all selected text to Vietnamese" and have it happen — correctly — in the drawing. But intent alone is not enough. AutoCAD text operations require understanding spatial layout, fragment grouping, font limitations, MText vs DBText, block references, and height scaling.
-
-`dwg-mcp` handles that complexity:
-
-- **Spatial clustering** groups fragmented text into logical sentences (by block, row, column, paragraph).
-- **Automatic font handling** creates a Unicode-capable text style and applies it — no more SHX question marks.
-- **Height scaling** compensates for the different visual density of Latin vs CJK text.
-- **MText conversion** upgrades single-line fragments into multi-line text when safe.
-- **Single undo** wraps each operation in a transaction.
-
----
-
-## Usage Evidence
-
-220 completed tool calls over 19 days of active use on production construction drawings. 98.2% success rate.
-
-| Tool | Calls |
-|------|-------|
-| get_selected_texts | ~100 |
-| translate_and_rewrite | ~77 |
-| send_code | ~28 |
-| collapse_and_rewrite | ~11 |
-| update_texts | ~10 |
-| apply_unicode_style | ~4 |
+So far the fork adds loading in Civil 3D and other AutoCAD-based products and its own product identity. Upstream's text translation workflow (spatial clustering, Unicode text style, in-place rewrite) is kept. See [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -84,7 +49,7 @@ AI agents make it possible to describe "translate all selected text to Vietnames
               | stdio MCP
               v
 +---------------------------+
-| Bimwright.Dwg.Server      |
+| tbc-acad-mcp.exe          |
 | .NET 8 / C#               |
 +---------------------------+
               |
@@ -92,7 +57,7 @@ AI agents make it possible to describe "translate all selected text to Vietnames
                | token auth
               v
 +---------------------------+
-| Bimwright.Dwg.Plugin      |
+| TbcAcadMcp.Plugin         |
 | AutoCAD 2022-2027 shells |
 +---------------------------+
               |
@@ -110,14 +75,14 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for threading, discovery, and auth detail
 
 ## Install
 
-Download the client setup ZIP from [GitHub Releases](https://github.com/bimwright/dwg-mcp/releases/latest). It includes a self-contained MCP server and release-specific AutoCAD plugins. Check `packedAutocadYears` in the downloaded ZIP's `manifest.json` and its bundle `PackageContents.xml` for the included years; check the release notes for years verified in a running AutoCAD host. Source shells cover 2022–2027, while packaged plugins and tested host years depend on the release. For a year absent from the package, build the plugin from source with that year's AutoCAD SDK.
+Download the client setup ZIP from [GitHub Releases](https://github.com/desarrolloteambimcivil/tbc_mcp_autocad/releases/latest). It includes a self-contained MCP server and release-specific AutoCAD plugins. Check `packedAutocadYears` in the downloaded ZIP's `manifest.json` and its bundle `PackageContents.xml` for the included years; check the release notes for years verified in a running AutoCAD host. Source shells cover 2022–2027, while packaged plugins and tested host years depend on the release. For a year absent from the package, build the plugin from source with that year's AutoCAD SDK.
 
 ```powershell
-$tag = (Invoke-RestMethod https://api.github.com/repos/bimwright/dwg-mcp/releases/latest).tag_name
-$zip = "$env:TEMP\DwgMcp.Setup-$tag-win-x64.zip"
-$dir = "$env:TEMP\DwgMcp.Setup-$tag-win-x64"
-Invoke-WebRequest "https://github.com/bimwright/dwg-mcp/releases/download/$tag/DwgMcp.Setup-$tag-win-x64.zip" -OutFile $zip
-Invoke-WebRequest "https://github.com/bimwright/dwg-mcp/releases/download/$tag/DwgMcp.Setup-$tag-win-x64.zip.sha256" -OutFile "$zip.sha256"
+$tag = (Invoke-RestMethod https://api.github.com/repos/desarrolloteambimcivil/tbc_mcp_autocad/releases/latest).tag_name
+$zip = "$env:TEMP\TbcAcadMcp.Setup-$tag-win-x64.zip"
+$dir = "$env:TEMP\TbcAcadMcp.Setup-$tag-win-x64"
+Invoke-WebRequest "https://github.com/desarrolloteambimcivil/tbc_mcp_autocad/releases/download/$tag/TbcAcadMcp.Setup-$tag-win-x64.zip" -OutFile $zip
+Invoke-WebRequest "https://github.com/desarrolloteambimcivil/tbc_mcp_autocad/releases/download/$tag/TbcAcadMcp.Setup-$tag-win-x64.zip.sha256" -OutFile "$zip.sha256"
 $expected = ((Get-Content "$zip.sha256" -Raw).Trim() -split '\s+')[0]
 if ($expected -notmatch '^[a-fA-F0-9]{64}$' -or (Get-FileHash $zip -Algorithm SHA256).Hash -ne $expected) { throw 'Setup ZIP checksum mismatch' }
 if (Test-Path -LiteralPath $dir) { throw 'Use a fresh extraction directory; existing files were preserved.' }
@@ -132,17 +97,17 @@ The installer:
 
 - detects installed AutoCAD years (a year counts when its `acad.exe` exists) and installs every packed year that matches; `-Years 2024,2027` forces an explicit list;
 - requires AutoCAD to be closed; caught errors trigger hash-verified recovery of recorded server/plugin/client-config replacements, with retained backup paths reported if restoration is incomplete;
-- deploys `%APPDATA%\Autodesk\ApplicationPlugins\Bimwright.Dwg.bundle\` (removing stale bundles with the same ProductCode) and the server at the fixed path `%LOCALAPPDATA%\Bimwright\dwg-mcp\server\current\dwg-mcp.exe`;
-- seeds `%LOCALAPPDATA%\Bimwright\dwg-mcp\dwgmcp.config.json` with `"toolsets": ["all"]` on a fresh install — an existing `toolsets` key is kept;
-- wires clients selected by `-Client <names>` (`none` skips edits; omission still selects detected clients). Use an explicit scope in both preview/apply. Routes without a verified CLI recovery path, currently Grok, stop before replacement. Config edits keep JSONC comments; existing `.bak` files are preserved and a unique backup is created instead. Existing Codex entries receive command-only repoints so args/env/other TOML tables survive. The entry name is `dwg-mcp`.
+- deploys `%APPDATA%\Autodesk\ApplicationPlugins\TbcAcadMcp.bundle\` (removing stale bundles with the same ProductCode) and the server at the fixed path `%LOCALAPPDATA%\NourRouas\tbc-acad-mcp\server\current\tbc-acad-mcp.exe`;
+- seeds `%LOCALAPPDATA%\NourRouas\tbc-acad-mcp\dwgmcp.config.json` with `"toolsets": ["all"]` on a fresh install — an existing `toolsets` key is kept;
+- wires clients selected by `-Client <names>` (`none` skips edits; omission still selects detected clients). Use an explicit scope in both preview/apply. Routes without a verified CLI recovery path, currently Grok, stop before replacement. Config edits keep JSONC comments; existing `.bak` files are preserved and a unique backup is created instead. Existing Codex entries receive command-only repoints so args/env/other TOML tables survive. The entry name is `tbc-acad-mcp`.
 
-Restart AutoCAD, then restart wired MCP clients to load `dwg-mcp`.
+Restart AutoCAD, then restart wired MCP clients to load `tbc-acad-mcp`.
 
 **Updating:** keep the exact reviewed release tag, verify its ZIP/sidecar and complete extracted manifest, then preview/apply the same explicit year/client scope. Close AutoCAD and affected clients first. The server path stays `server\current\`. The installer preserves settings, ToolBaker data and captures. Ambiguous legacy/current roots stop without merging; a committed DWG migration marker permits retaining both separately. Recovery covers caught errors; process crashes/power loss and actual client reconnect still require separate verification. Uninstall is not upgrade rollback.
 
-**Uninstall:** `uninstall.ps1` removes the bundle, the server copies, discovery files and caches under `%LOCALAPPDATA%\Bimwright\dwg-mcp\` (settings, config, logs and captures are kept; `-Purge` removes those too). Client config entries are never touched — remove the `dwg-mcp` entry yourself, or run `install.ps1 -Uninstall -Client <names>` first.
+**Uninstall:** `uninstall.ps1` removes the bundle, the server copies, discovery files and caches under `%LOCALAPPDATA%\NourRouas\tbc-acad-mcp\` (settings, config, logs and captures are kept; `-Purge` removes those too). Client config entries are never touched — remove the `tbc-acad-mcp` entry yourself, or run `install.ps1 -Uninstall -Client <names>` first.
 
-Do **not** `dotnet tool install -g Bimwright.Dwg.Server` — that package is not the supported client install.
+Do **not** `dotnet tool install -g TbcAcadMcp.Server` — that package is not the supported client install.
 
 **Developer (local SDK):** `dotnet build` the year you have, then `pwsh scripts/install.ps1 -Years 2024` from the repo (copies that year’s `bin` output). `NETLOAD` remains available for Debug DLLs.
 
@@ -153,8 +118,8 @@ Check the selected clients' `Client :` summary lines. The example above uses `-C
 ```json
 {
   "mcpServers": {
-    "dwg-mcp": {
-      "command": "C:\\Users\\<user>\\AppData\\Local\\Bimwright\\dwg-mcp\\server\\current\\dwg-mcp.exe",
+    "tbc-acad-mcp": {
+      "command": "C:\\Users\\<user>\\AppData\\Local\\NourRouas\\tbc-acad-mcp\\server\\current\\tbc-acad-mcp.exe",
       "args": []
     }
   }
@@ -166,8 +131,8 @@ Select an initial AutoCAD instance by PID (or an unambiguous 4-digit year):
 ```json
 {
   "mcpServers": {
-    "dwg-mcp": {
-      "command": "C:\\Users\\<user>\\AppData\\Local\\Bimwright\\dwg-mcp\\server\\current\\dwg-mcp.exe",
+    "tbc-acad-mcp": {
+      "command": "C:\\Users\\<user>\\AppData\\Local\\NourRouas\\tbc-acad-mcp\\server\\current\\tbc-acad-mcp.exe",
       "args": ["--target", "pid:12345"]
     }
   }
@@ -180,27 +145,27 @@ Once bound, changing instances requires `pid:<PID>` or `id:acad-<year>-<PID>`; l
 
 With `--read-only`, `dwg_switch_target` is unavailable and direct calls are refused. Start the gateway with `--read-only --target pid:<PID>` (or `--target id:acad-<year>-<PID>`), then check health and the current target. On `TARGET_LOST` or `TARGET_CHANGED`, call `dwg_list_available_targets` and restart the gateway with the intended explicit `--target`. A lost binding never selects another instance automatically.
 
-Use `--read-only` to strip write-capable toolsets (query/view/meta routing remain as configured). Use `--toolsets all` or an explicit list that **includes** the defaults you need (a custom list **replaces** the default set — e.g. `query,modify,meta,view,annotation`). Env: `BIMWRIGHT_DWG_TOOLSETS=…`.
+Use `--read-only` to strip write-capable toolsets (query/view/meta routing remain as configured). Use `--toolsets all` or an explicit list that **includes** the defaults you need (a custom list **replaces** the default set — e.g. `query,modify,meta,view,annotation`). Env: `TBC_ACAD_MCP_TOOLSETS=…`.
 
-`dwg_send_code` is available by default via `meta`. Use `--enable-send-code` / `--disable-send-code` (JSON `enableSendCode`; env `BIMWRIGHT_DWG_ENABLE_SEND_CODE`) to control server exposure. Disabled code is also refused inside batches before any command is sent. `MCPDISABLECODE` disables C# execution for the AutoCAD session; `MCPENABLECODE` only re-enables the host gate and cannot override the server setting. `dwg_run_lisp` remains registered for compatibility but refuses every request at both server and plugin. This build has no isolated LISP executor or approved-script trust mechanism. `--read-only` removes both tools.
+`dwg_send_code` is available by default via `meta`. Use `--enable-send-code` / `--disable-send-code` (JSON `enableSendCode`; env `TBC_ACAD_MCP_ENABLE_SEND_CODE`) to control server exposure. Disabled code is also refused inside batches before any command is sent. `MCPDISABLECODE` disables C# execution for the AutoCAD session; `MCPENABLECODE` only re-enables the host gate and cannot override the server setting. `dwg_run_lisp` remains registered for compatibility but refuses every request at both server and plugin. This build has no isolated LISP executor or approved-script trust mechanism. `--read-only` removes both tools.
 
 MCP response budgets count the final serialized UTF-8 tool result, including text, structured content and inline images, excluding the JSON-RPC envelope. The default 80 MiB budget accommodates the existing maximum 8 MiB inline image even with SDK JSON escaping. A lower cap can compact the reply after the tool has run; it does not cancel or retry the operation automatically. Inspect the outcome before repeating a write.
 
 | CLI option | JSON property | Environment variable | Default bytes |
 |---|---|---|---|
-| `--response-budget-bytes` | `responseBudgetBytes` | `BIMWRIGHT_DWG_RESPONSE_BUDGET_BYTES` | 83886080 (80 MiB) |
-| `--response-warn-bytes` | `responseWarnBytes` | `BIMWRIGHT_DWG_RESPONSE_WARN_BYTES` | 1048576 (1 MiB) |
-| `--response-strong-warn-bytes` | `responseStrongWarnBytes` | `BIMWRIGHT_DWG_RESPONSE_STRONG_WARN_BYTES` | 8388608 (8 MiB) |
+| `--response-budget-bytes` | `responseBudgetBytes` | `TBC_ACAD_MCP_RESPONSE_BUDGET_BYTES` | 83886080 (80 MiB) |
+| `--response-warn-bytes` | `responseWarnBytes` | `TBC_ACAD_MCP_RESPONSE_WARN_BYTES` | 1048576 (1 MiB) |
+| `--response-strong-warn-bytes` | `responseStrongWarnBytes` | `TBC_ACAD_MCP_RESPONSE_STRONG_WARN_BYTES` | 8388608 (8 MiB) |
 
 Precedence is JSON → environment → CLI; the last occurrence of each byte-count CLI option wins. Provided environment/CLI values must contain only ASCII decimal digits within a 32-bit signed integer's nonnegative range: signs, whitespace, units and overflow are rejected, even if a later setting would override that token. After precedence, the effective budget must be at least 4096 bytes and `0 < warn <= strong <= budget`. Unset warning thresholds default to the smaller of their listed default and the configured budget; explicit thresholds are not clamped. Numeric bounds are checked on the effective settings, so a syntactically valid lower-priority value may be replaced before those checks.
 
-Warnings use MCP `_meta["bimwright/dwg-mcp/response_budget"]` when they fit alongside the original result. Oversized results become a bounded receipt retaining reported statuses/effect facts and explicit omissions. Before the plugin's 10 MiB cutoff, complete result JSON is written as `output_artifact` with `scope=plugin_result`, absolute path, byte count, SHA-256 and preview. The final MCP budget may write a second complete snapshot with `scope=mcp_tool_result`, including text/images/structured content and metadata received by the gateway. This snapshot cannot recover content already omitted by an older plugin; follow any upstream artifact reference. The original nullable MCP `isError` is preserved. Storage failure or the artifact size cap reports `complete=false` with unavailable identity; inspect outcome/files and never replay a mutation to recover output.
+Warnings use MCP `_meta["desarrolloteambimcivil/tbc_mcp_autocad/response_budget"]` when they fit alongside the original result. Oversized results become a bounded receipt retaining reported statuses/effect facts and explicit omissions. Before the plugin's 10 MiB cutoff, complete result JSON is written as `output_artifact` with `scope=plugin_result`, absolute path, byte count, SHA-256 and preview. The final MCP budget may write a second complete snapshot with `scope=mcp_tool_result`, including text/images/structured content and metadata received by the gateway. This snapshot cannot recover content already omitted by an older plugin; follow any upstream artifact reference. The original nullable MCP `isError` is preserved. Storage failure or the artifact size cap reports `complete=false` with unavailable identity; inspect outcome/files and never replay a mutation to recover output.
 
-Artifacts contain full returned output, which may include sensitive data or code echoed by a script. They are separate from opt-in call logging and sanitized session History: inputs/auth/code requests are not added to the artifact. UTF-8 JSON files live under `%LOCALAPPDATA%\Bimwright\dwg-mcp\outputs`, with a 128 MiB per-file cap, 256 MiB group cap, 64-file cap and 7-day maximum age. Verify bytes/hash before reading and copy needed artifacts elsewhere before expiry; capacity can evict older files sooner. Files publish atomically; receipts are returned after hash/readback. Failed retention prevents growth. Only exact generated file names are pruned, on writes and background startup maintenance; arbitrary files, drawings, settings and captures are excluded. Linked paths are refused. Retention is enforced when the product runs, not by an external scheduled service. Under extreme final-budget pressure, preview or a long escaped path can be omitted explicitly (`path_omitted`); the full file and its real hash remain, and a shortened fake path is never returned.
+Artifacts contain full returned output, which may include sensitive data or code echoed by a script. They are separate from opt-in call logging and sanitized session History: inputs/auth/code requests are not added to the artifact. UTF-8 JSON files live under `%LOCALAPPDATA%\NourRouas\tbc-acad-mcp\outputs`, with a 128 MiB per-file cap, 256 MiB group cap, 64-file cap and 7-day maximum age. Verify bytes/hash before reading and copy needed artifacts elsewhere before expiry; capacity can evict older files sooner. Files publish atomically; receipts are returned after hash/readback. Failed retention prevents growth. Only exact generated file names are pruned, on writes and background startup maintenance; arbitrary files, drawings, settings and captures are excluded. Linked paths are refused. Retention is enforced when the product runs, not by an external scheduled service. Under extreme final-budget pressure, preview or a long escaped path can be omitted explicitly (`path_omitted`); the full file and its real hash remain, and a shortened fake path is never returned.
 
 Batch receipts keep each step's zero-based `index`, `command_ok`, effective `ok`, `outcome` and nullable `mutation_applied`. `send_code` checks its execution status separately from its wrapper; a malformed/missing status stays unknown, and user DTO fields are not treated as execution status. File-producing steps expose `output_verified`; DXF/Save use before/after byte hashes and distinguish new, changed, unchanged and unavailable readback in `file_receipt`. Capture hashes the newly written image while its stream is exclusive. A returned command alone does not verify fresh file output. Full per-step details remain in the artifact when inline receipts are compacted. AutoCAD batches remain sequential logical batches: no group rollback is claimed, and errors may follow committed effects.
 
-Call logging is **off by default**. Use `--enable-call-log` / `--disable-call-log` (JSON `enableCallLog`; env `BIMWRIGHT_DWG_ENABLE_CALL_LOG`) to opt in/out. Precedence is JSON → environment → CLI; the last occurrence of each enable/disable pair wins. When off, the server creates/appends no call log or call journal. When on, `%LOCALAPPDATA%\Bimwright\dwg-mcp\dwg-mcp-calls.jsonl` records redacted parameters and timing/outcome metadata, never results. Code fields, including nested batch code, contain only character length and SHA-256 of the original UTF-8 body; code-related error text is omitted because it may echo source. No code-body cache or body journal is implemented. ToolBaker adaptive usage, diagnostic logs and session-only History are separate from this switch; the plugin has no persistent call-log writer.
+Call logging is **off by default**. Use `--enable-call-log` / `--disable-call-log` (JSON `enableCallLog`; env `TBC_ACAD_MCP_ENABLE_CALL_LOG`) to opt in/out. Precedence is JSON → environment → CLI; the last occurrence of each enable/disable pair wins. When off, the server creates/appends no call log or call journal. When on, `%LOCALAPPDATA%\NourRouas\tbc-acad-mcp\tbc-acad-mcp-calls.jsonl` records redacted parameters and timing/outcome metadata, never results. Code fields, including nested batch code, contain only character length and SHA-256 of the original UTF-8 body; code-related error text is omitted because it may echo source. No code-body cache or body journal is implemented. ToolBaker adaptive usage, diagnostic logs and session-only History are separate from this switch; the plugin has no persistent call-log writer.
 
 New call-log segments rotate before the next UTF-8 record would exceed 5 MiB; each generated group retains at most 100 MiB for 30 days. Startup applies retention even when recording is off. Recent oversized legacy segments are preserved intact within that group budget. Diagnostics use a background writer with a 10 MiB active file and one backup, with repeated messages summarized. Maintenance only handles known generated logs in the current and legacy DWG data roots; settings, drawings, captures and ToolBaker state are preserved.
 
@@ -208,7 +173,7 @@ Maintenance retries only file sharing/lock violations and log-mutex timeouts, wi
 
 Local transport accepts requests up to 16 MiB and responses up to 32 MiB. Each gateway admits up to eight concurrent calls; the TCP listener admits up to eight clients and the AutoCAD API queue up to 16 requests. Idle/incomplete input and blocked writes have 30-second deadlines, separate from host execution and the longer `dwg_open_drawing` response wait. Stop closes the endpoint and old connections and skips queued work that has not started. A running operation can still complete after a timeout or disconnect; inspect its outcome before retrying a write.
 
-Activity toasts are on by default. Finished tool calls update one card in the AutoCAD window corner. The title names the gateway and the AutoCAD year (`dwg-mcp 2024`), the next line names the latest tool, and the Success · Failed · Capture counts spread evenly across the card; the latest result is the counter tooltip. The card's left edge is a vertical gradient. An allowlisted capture shows as a thumbnail in one fixed frame, centred on both axes, and stays at least 5 seconds: a later result without an image clears it only after that, back-to-back captures switch to the newest one every 5 seconds, and the preview does not change while the pointer is on the card. Click the thumbnail to open the image; the card then closes. A click elsewhere on the card opens/focuses History and dismisses it. The close button only closes the card and stays transparent on hover. Counters roll like an odometer, and the thumbnail opens, cross-fades to the next capture and fades out; all motion follows Windows' **Animation effects** setting, and with it off everything changes at once. The card hides after an idle interval (10, 20, 30 or 60 seconds, default 20) and pauses while the pointer is over it. While AutoCAD is minimized or a modal dialog is open, counts are kept and the card is shown once when the frame is usable again. Toggle with `MCPTOAST` or open `MCPSETTINGS`. `enableToast`, `toastIdleSeconds` and `showBranding` are stored in `%LOCALAPPDATA%\Bimwright\dwg-mcp\settings.json`. `BIMWRIGHT_ENABLE_TOAST=0` re-applies at every launch while set. Show branding is off until turned on in Settings and is remembered across AutoCAD restarts. Toasts never steal keyboard focus.
+Activity toasts are on by default. Finished tool calls update one card in the AutoCAD window corner. The title names the gateway and the AutoCAD year (`tbc-acad-mcp 2024`), the next line names the latest tool, and the Success · Failed · Capture counts spread evenly across the card; the latest result is the counter tooltip. The card's left edge is a vertical gradient. An allowlisted capture shows as a thumbnail in one fixed frame, centred on both axes, and stays at least 5 seconds: a later result without an image clears it only after that, back-to-back captures switch to the newest one every 5 seconds, and the preview does not change while the pointer is on the card. Click the thumbnail to open the image; the card then closes. A click elsewhere on the card opens/focuses History and dismisses it. The close button only closes the card and stays transparent on hover. Counters roll like an odometer, and the thumbnail opens, cross-fades to the next capture and fades out; all motion follows Windows' **Animation effects** setting, and with it off everything changes at once. The card hides after an idle interval (10, 20, 30 or 60 seconds, default 20) and pauses while the pointer is over it. While AutoCAD is minimized or a modal dialog is open, counts are kept and the card is shown once when the frame is usable again. Toggle with `MCPTOAST` or open `MCPSETTINGS`. `enableToast`, `toastIdleSeconds` and `showBranding` are stored in `%LOCALAPPDATA%\NourRouas\tbc-acad-mcp\settings.json`. `BIMWRIGHT_ENABLE_TOAST=0` re-applies at every launch while set. Show branding is off until turned on in Settings and is remembered across AutoCAD restarts. Toasts never steal keyboard focus.
 
 `dwg_send_code` accepts inline synchronous snippets only: `async`/`await` and `#load` directives are rejected before execution. Keep AutoCAD API calls on the calling thread; do not offload them to `Task.Run` or other threads. Return JSON-safe DTOs; AutoCAD/COM objects are rejected even when nested. LISP inspection is available through `dwg_inspect_lisp`: sources over 2,000,000 characters are reported uninspectable/dangerous, and the 200-finding display cap does not stop severity detection. Regex matching has a timeout; timed-out scans are reported as incomplete/dangerous, never clean.
 
@@ -216,7 +181,7 @@ Activity toasts are on by default. Finished tool calls update one card in the Au
 
 `MCPHISTORY` or **Open session History** in Settings opens the same modeless window. It keeps the latest 1,000 plugin-processed calls in memory, including when toasts are off, with search, Success/Failed and Read/Write filters and duration. Select a row to view/copy **What**, **Input** and **Output**; each sanitized detail is limited to 4,096 characters, with explicit omission markers. Code fields retain only original character length/SHA-256; output/errors of code-capable calls are omitted because they may echo source. Secret fields and local paths are redacted, and binary payloads are omitted. Copy uses the stored sanitized text, without display wrapping. **Refresh** retains a visible selection and scroll position; **New session** clears the in-memory entries and details. Closing/reopening retains the session; closed windows release their refresh timers. History adds no persistent writer or rerun action, and call logging remains opt-in. Server-only tool notifications are not yet included.
 
-The AutoCAD plugin starts its listener by default. Set `"autoStartTransport": false` in `%LOCALAPPDATA%\Bimwright\dwg-mcp\settings.json` to load without a listener or discovery publication. The plugin resolves default → JSON → `BIMWRIGHT_DWG_AUTO_START_TRANSPORT` (`true/false`, `1/0`, `yes/no`, `on/off`); the environment wins at each launch. `MCPSTART`/`MCPSTOP` and Settings On/Off save the explicit choice while preserving other settings, even when already on/off. Failed saves keep the current listener state and report the error in Settings and the command line; repeat the command after correcting the file to retry. Settings shows the next-startup value and source separately from the running listener. Normal AutoCAD shutdown does not change the saved choice. This plugin setting has no gateway CLI switch; gateway configuration keeps its existing precedence.
+The AutoCAD plugin starts its listener by default. Set `"autoStartTransport": false` in `%LOCALAPPDATA%\NourRouas\tbc-acad-mcp\settings.json` to load without a listener or discovery publication. The plugin resolves default → JSON → `TBC_ACAD_MCP_AUTO_START_TRANSPORT` (`true/false`, `1/0`, `yes/no`, `on/off`); the environment wins at each launch. `MCPSTART`/`MCPSTOP` and Settings On/Off save the explicit choice while preserving other settings, even when already on/off. Failed saves keep the current listener state and report the error in Settings and the command line; repeat the command after correcting the file to retry. Settings shows the next-startup value and source separately from the running listener. Normal AutoCAD shutdown does not change the saved choice. This plugin setting has no gateway CLI switch; gateway configuration keeps its existing precedence.
 
 ## Health runtime and update checks (Unreleased)
 
@@ -228,7 +193,7 @@ Host-observed responses include a top-level `_target` receipt with PID, process 
 
 Inspect both `update.components` and the full `update.notification` message, `lookup_reason`, `protected_component_reasons` and `unobserved_components`. `UPDATE_CHECK_UNAVAILABLE` reports external lookup failure, not a runtime fault or installation authorization. `LOCAL_VERSION_AHEAD` is informational: preserve newer components; never downgrade. Only `update_guidance.mode=prepare_update` with `bundle_update_proposal_allowed=true` permits an update proposal, and installation still needs user authorization. Other modes only check/report/review. Health never installs, downloads packages, changes client configs, saves/closes drawings or restarts processes. See [agent guidance](AGENTS.md).
 
-After reconnect, compare fresh `initialize.serverInfo` and the health tool's `_meta["bimwright/dwg-mcp/runtime"]` in `tools/list` with `client_verification` on the same connection, including schema/annotations. The server cannot prove a client cache refresh. Health remains available under `--read-only`; its `openWorldHint` is true only because the optional check reaches GitHub. This feature requires the new gateway and plugin; published v2.0.1 does not include it. Host-free protocol tests and AutoCAD 2024/2027 builds are verified; installed-host acceptance remains pending.
+After reconnect, compare fresh `initialize.serverInfo` and the health tool's `_meta["desarrolloteambimcivil/tbc_mcp_autocad/runtime"]` in `tools/list` with `client_verification` on the same connection, including schema/annotations. The server cannot prove a client cache refresh. Health remains available under `--read-only`; its `openWorldHint` is true only because the optional check reaches GitHub. This feature requires the new gateway and plugin; published v2.0.1 does not include it. Host-free protocol tests and AutoCAD 2024/2027 builds are verified; installed-host acceptance remains pending.
 
 ## Tools
 
@@ -274,7 +239,7 @@ Follow `output.next_calls` to page `types`, `layers` or `spaces`; each suggested
 | `dwg_erase_entities` | Erase entities identified by hex handles |
 | `dwg_offset_entities` | Offset curve entities and return generated handles |
 | `dwg_translate_and_rewrite` | **Preferred.** Write translated text back: anchor, delete, MText, font, height |
-| `dwg_apply_unicode_style` | Ensure `Bimwright_Unicode` style exists and apply to targets |
+| `dwg_apply_unicode_style` | Ensure `TBC_Unicode` style exists and apply to targets |
 | `dwg_collapse_and_rewrite` | Low-level rewrite primitive with explicit geometric control |
 | `dwg_list_available_targets` | List AutoCAD instances with PID, target ID and process start |
 | `dwg_get_current_target` | Show binding state, generation, PID and confirmed drawing |
@@ -446,8 +411,8 @@ In a scratch DWG:
 
 1. Run `dwg_get_drawing_info`.
 2. Run `dwg_list_layers`.
-3. Create `BIMWRIGHT_TEST` with `dwg_create_layer`.
-4. Create a point, polyline, rectangle, arc, and ellipse on `BIMWRIGHT_TEST` with `dwg_create_point`, `dwg_create_polyline`, `dwg_create_rectangle`, `dwg_create_arc`, and `dwg_create_ellipse`; record the returned hex handles and reserve one curve, such as the arc or ellipse, for color and offset checks.
+3. Create `TBC_TEST` with `dwg_create_layer`.
+4. Create a point, polyline, rectangle, arc, and ellipse on `TBC_TEST` with `dwg_create_point`, `dwg_create_polyline`, `dwg_create_rectangle`, `dwg_create_arc`, and `dwg_create_ellipse`; record the returned hex handles and reserve one curve, such as the arc or ellipse, for color and offset checks.
 5. Query, count, and select those entities by layer and type with `dwg_query_entities`, `dwg_count_entities`, `dwg_select_by_layer`, and `dwg_select_by_type`; confirm select tools return handle lists and do not change pickfirst selection.
 6. Move, rotate, and scale non-reserved scratch entities with `dwg_move_entities`, `dwg_rotate_entities`, and `dwg_scale_entities`.
 7. Copy one non-reserved scratch entity with `dwg_copy_entities`, then erase only that disposable copied temp entity with `dwg_erase_entities`.
@@ -546,7 +511,7 @@ Do not expose the plugin port to the network.
 ## Project Structure
 
 ```
-dwg-mcp/
+tbc-acad-mcp/
 ├── src/
 │   ├── Bimwright.Dwg.sln
 │   ├── server/            # .NET 8 MCP server (global tool)
@@ -565,25 +530,18 @@ dwg-mcp/
 
 ---
 
-## The bimwright family
+## TBC-MCP and upstream
 
-Open-source tools connecting AI assistants to BIM and CAD applications.
+- [**tbc-revit-mcp**](https://github.com/desarrolloteambimcivil/tbc_mcp_revit) — Autodesk® Revit® (fork of [bimwright/rvt-mcp](https://github.com/bimwright/rvt-mcp))
+- [**tbc-acad-mcp**](https://github.com/desarrolloteambimcivil/tbc_mcp_autocad) — Autodesk® AutoCAD® and Civil 3D® (fork of [bimwright/dwg-mcp](https://github.com/bimwright/dwg-mcp))
 
-The name **bimwright** combines **BIM** with **wright**, an old word for a maker or builder—as in *shipwright*.
-
-See [how the gateway names are chosen](https://github.com/bimwright/.github/blob/master/profile/README.md#naming).
-
-- [**rvt-mcp**](https://github.com/bimwright/rvt-mcp) — Autodesk® Revit®
-- [**dwg-mcp**](https://github.com/bimwright/dwg-mcp) — Autodesk® AutoCAD®
-- [**nwd-mcp**](https://github.com/bimwright/nwd-mcp) — Autodesk® Navisworks®
-- [**ipt-mcp**](https://github.com/bimwright/ipt-mcp) — Autodesk® Inventor®
-- [**bim-wiki**](https://github.com/bimwright/bim-wiki) — Vietnamese-first BIM knowledge base
+Both build on the open-source [bimwright](https://github.com/bimwright) gateways by Khoa Le. Thanks to the original author.
 
 ---
 
 ## Disclaimer
 
-Autodesk, AutoCAD, and DWG are trademarks or registered trademarks of Autodesk, Inc., and/or its subsidiaries and/or affiliates. DWG is the native file format for Autodesk AutoCAD software. bimwright is an independent open-source project and is not affiliated with, sponsored by, or endorsed by Autodesk, Inc.
+Autodesk, AutoCAD, and DWG are trademarks or registered trademarks of Autodesk, Inc., and/or its subsidiaries and/or affiliates. DWG is the native file format for Autodesk AutoCAD software. tbc-acad-mcp is an independent open-source project and is not affiliated with, sponsored by, or endorsed by Autodesk, Inc.
 
 ---
 
@@ -597,32 +555,32 @@ Third-party notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
 
 Every tool except `dwg_send_code` declares read-only, destructive, idempotent and open-world hints. Full mode has 69 tools; default read-only mode has 17, and `--toolsets all --read-only` exposes the 23 read-only tools below. Zoom can change transient UI state. Target switching, capture, region inspection and restore are excluded from read-only mode. `dwg_health` is read-only; its explicit update check can contact GitHub.
 
-Use exact rules for the tools you intend to allow. Avoid `mcp__dwg-mcp__*`: it also permits drawing/file writes and code execution. `dwg_send_code` has no annotations and is deliberately absent from this read-only allowlist; any persistent approval for it must be an explicit choice in your MCP client.
+Use exact rules for the tools you intend to allow. Avoid `mcp__tbc-acad-mcp__*`: it also permits drawing/file writes and code execution. `dwg_send_code` has no annotations and is deliberately absent from this read-only allowlist; any persistent approval for it must be an explicit choice in your MCP client.
 
 <!-- read-only-allowlist:start -->
 ```text
-mcp__dwg-mcp__dwg_count_entities
-mcp__dwg-mcp__dwg_create_bake_issue_draft
-mcp__dwg-mcp__dwg_get_block_attributes
-mcp__dwg-mcp__dwg_get_current_target
-mcp__dwg-mcp__dwg_get_drawing_info
-mcp__dwg-mcp__dwg_get_drawing_profile
-mcp__dwg-mcp__dwg_get_entity_properties
-mcp__dwg-mcp__dwg_get_selected_texts
-mcp__dwg-mcp__dwg_get_variables
-mcp__dwg-mcp__dwg_health
-mcp__dwg-mcp__dwg_inspect_lisp
-mcp__dwg-mcp__dwg_list_available_targets
-mcp__dwg-mcp__dwg_list_bake_suggestions
-mcp__dwg-mcp__dwg_list_baked_tools
-mcp__dwg-mcp__dwg_list_blocks
-mcp__dwg-mcp__dwg_list_layers
-mcp__dwg-mcp__dwg_list_recent_drawings
-mcp__dwg-mcp__dwg_query_entities
-mcp__dwg-mcp__dwg_select_by_layer
-mcp__dwg-mcp__dwg_select_by_type
-mcp__dwg-mcp__dwg_zoom_extents
-mcp__dwg-mcp__dwg_zoom_to_entity
-mcp__dwg-mcp__dwg_zoom_window
+mcp__tbc-acad-mcp__dwg_count_entities
+mcp__tbc-acad-mcp__dwg_create_bake_issue_draft
+mcp__tbc-acad-mcp__dwg_get_block_attributes
+mcp__tbc-acad-mcp__dwg_get_current_target
+mcp__tbc-acad-mcp__dwg_get_drawing_info
+mcp__tbc-acad-mcp__dwg_get_drawing_profile
+mcp__tbc-acad-mcp__dwg_get_entity_properties
+mcp__tbc-acad-mcp__dwg_get_selected_texts
+mcp__tbc-acad-mcp__dwg_get_variables
+mcp__tbc-acad-mcp__dwg_health
+mcp__tbc-acad-mcp__dwg_inspect_lisp
+mcp__tbc-acad-mcp__dwg_list_available_targets
+mcp__tbc-acad-mcp__dwg_list_bake_suggestions
+mcp__tbc-acad-mcp__dwg_list_baked_tools
+mcp__tbc-acad-mcp__dwg_list_blocks
+mcp__tbc-acad-mcp__dwg_list_layers
+mcp__tbc-acad-mcp__dwg_list_recent_drawings
+mcp__tbc-acad-mcp__dwg_query_entities
+mcp__tbc-acad-mcp__dwg_select_by_layer
+mcp__tbc-acad-mcp__dwg_select_by_type
+mcp__tbc-acad-mcp__dwg_zoom_extents
+mcp__tbc-acad-mcp__dwg_zoom_to_entity
+mcp__tbc-acad-mcp__dwg_zoom_window
 ```
 <!-- read-only-allowlist:end -->

@@ -1,7 +1,7 @@
 <!-- agents-install-guide -->
-<!-- mcp-name: io.github.bimwright/dwg-mcp -->
+<!-- mcp-name: io.github.desarrolloteambimcivil/tbc-acad-mcp -->
 
-# AGENTS.md — dwg-mcp health and update contract
+# AGENTS.md — tbc-acad-mcp health and update contract
 
 These instructions apply to the development health feature; published v2.0.1 does not expose `dwg_health`.
 
@@ -38,7 +38,7 @@ Unobserved components need the intended connection and runtime metadata; observe
 
 Only `update_guidance.mode=prepare_update` with `update.notification.bundle_update_proposal_allowed=true` contains installation steps and permits a bundle update proposal. Installation needs explicit user authorization; reuse an existing authorization for the same scope. Other modes contain only check/report/review actions. Authorization alone does not override blocked eligibility, and development builds must never be automatically replaced.
 
-For an eligible authorized update, keep the exact release tag from the fresh health response. Use its official `DwgMcp.Setup-*-win-x64.zip` and matching SHA-256 sidecar; verify the ZIP and extracted manifest/inventory before replacement. Do not substitute another release or a source build. Back up the installed server, plugin bundle and client configuration. The candidate installer journals replacements and verifies rollback on caught errors; incomplete recovery retains backups and reports their exact paths. Crash/power-loss recovery is outside this contract. Preview `install.ps1 -WhatIf -Client none -Years <reviewed-years> -SetupZip <zip> -ReleaseTag <exact-tag>` and apply the same options to leave client configs untouched. Any client-config edit needs its own exact preview and approval; CLI routes without verified recovery paths are refused. Keep pre-existing `.bak` files. An unmarked dual-root conflict stops installation; only a valid `.migrated-from-dwg-v1.json` for those exact DWG roots permits keeping both separately. Never merge or delete arbitrary legacy/current data. Close AutoCAD and affected clients with the user's involvement; do not save/close drawings or kill processes automatically. Restore backups on upgrade failure instead of uninstalling. Preserve personal data.
+For an eligible authorized update, keep the exact release tag from the fresh health response. Use its official `TbcAcadMcp.Setup-*-win-x64.zip` and matching SHA-256 sidecar; verify the ZIP and extracted manifest/inventory before replacement. Do not substitute another release or a source build. Back up the installed server, plugin bundle and client configuration. The candidate installer journals replacements and verifies rollback on caught errors; incomplete recovery retains backups and reports their exact paths. Crash/power-loss recovery is outside this contract. Preview `install.ps1 -WhatIf -Client none -Years <reviewed-years> -SetupZip <zip> -ReleaseTag <exact-tag>` and apply the same options to leave client configs untouched. Any client-config edit needs its own exact preview and approval; CLI routes without verified recovery paths are refused. Keep pre-existing `.bak` files. An unmarked dual-root conflict stops installation; only a valid `.migrated-from-dwg-v1.json` for those exact DWG roots permits keeping both separately. Never merge or delete arbitrary legacy/current data. Close AutoCAD and affected clients with the user's involvement; do not save/close drawings or kill processes automatically. Restore backups on upgrade failure instead of uninstalling. Preserve personal data.
 
 Health only reports metadata/guidance: it never downloads packages, installs, changes configs, saves/closes drawings or restarts processes.
 
@@ -47,7 +47,7 @@ Health only reports metadata/guidance: it never downloads packages, installs, ch
 After an authorized upgrade, restart AutoCAD and reconnect/restart the MCP client. On the same new connection, record fresh `initialize.serverInfo`, `tools/list`, then health:
 
 - Compare server name/full informational version with `client_verification.expected_server_info`.
-- Compare the health tool's `_meta["bimwright/dwg-mcp/runtime"]` with `client_verification.expected_runtime` (version, MVID, PID, start time).
+- Compare the health tool's `_meta["desarrolloteambimcivil/tbc_mcp_autocad/runtime"]` with `client_verification.expected_runtime` (version, MVID, PID, start time).
 - Check optional boolean `check_updates`, read-only true, destructive false, idempotent true, open-world true.
 - Verify loaded plugin identity and a successful host/state probe; do not rely on tool count alone.
 

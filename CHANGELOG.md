@@ -1,6 +1,23 @@
 # Changelog
 
-## 2.1.1 — Unreleased
+## tbc-acad-mcp — Unreleased
+
+First changes of the fork of [bimwright/dwg-mcp](https://github.com/bimwright/dwg-mcp) (forked at upstream `0d540ee`, the unreleased 2.1.1 below).
+
+### Rebrand
+
+- The product is now `tbc-acad-mcp` by Nour Rouas: MCP server name and `product_id`, gateway executable `tbc-acad-mcp.exe`, plugin assemblies `TbcAcadMcp.Plugin.AcadNN.dll`, bundle `TbcAcadMcp.bundle`, setup ZIP `TbcAcadMcp.Setup-<tag>-win-x64.zip`, MCP client entry `tbc-acad-mcp`, release checks against `desarrolloteambimcivil/tbc_mcp_autocad`.
+- Per-user data moves to `%LOCALAPPDATA%\NourRouas\tbc-acad-mcp\` (discovery files, config, settings, captures, outputs, logs, ToolBaker). Nothing is migrated from `%LOCALAPPDATA%\Bimwright\dwg-mcp\`: dwg-mcp is a separate product and its folders are never read, maintained or deleted.
+- Environment variables are `TBC_ACAD_MCP_*`; the `BIMWRIGHT_DWG_*` names are still read when the new name is not set.
+- The plugin's named pipe is `TbcAcadMcp-<year>-<pid>`, the Unicode text style it creates in drawings is `TBC_Unicode` and its working layer is `layer-tbc-acad-mcp`.
+- MCP `_meta` keys use the `desarrolloteambimcivil/tbc_mcp_autocad/` prefix.
+- Source namespaces and project file names (`Bimwright.Dwg.*`), tool names (`dwg_*`), AutoCAD commands and discovery file names are unchanged.
+
+### Civil 3D
+
+- The bundle declares `Platform="AutoCAD*"`, so Civil 3D and other AutoCAD-based products load the plugin. With `Platform="AutoCAD"` Civil 3D 2025 skipped the bundle.
+
+## 2.1.1 — Unreleased (upstream)
 
 ### Rewrite height receipts
 

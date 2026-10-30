@@ -1,15 +1,19 @@
-<!-- mcp-name: io.github.bimwright/dwg-mcp -->
+<!-- mcp-name: io.github.desarrolloteambimcivil/tbc-acad-mcp -->
+
+<h1 align="center">tbc-acad-mcp</h1>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/bimwright/.github/master/assets/logos/dwg-mcp.png" alt="dwg-mcp" width="180" />
+  Autodesk AutoCAD / Civil 3D 向け MCP ゲートウェイ — AI エージェントから DWG 図面を読み書き
 </p>
 
-<h1 align="center">dwg-mcp</h1>
+<p align="center">
+  作者: Nour Rouas — TeamBIMCivil の BIM 開発者/モデラー
+</p>
 
 <p align="center">
-  <a href="https://github.com/bimwright/dwg-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/dwg-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
+  <a href="https://github.com/desarrolloteambimcivil/tbc_mcp_autocad/actions/workflows/build.yml"><img src="https://github.com/desarrolloteambimcivil/tbc_mcp_autocad/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
-  <a href="#サポート対象autocadバージョン"><img src="https://img.shields.io/badge/AutoCAD-2022--2027-186BFF" alt="AutoCAD 2022-2027" /></a>
+  <a href="#サポート対象autocadバージョン"><img src="https://img.shields.io/badge/AutoCAD%20%2F%20Civil%203D-2022--2027-186BFF" alt="AutoCAD / Civil 3D 2022-2027" /></a>
   <a href="#ツール"><img src="https://img.shields.io/badge/MCP-45%20default%20%2B%20optional-6C47FF" alt="MCP tools" /></a>
 </p>
 
@@ -19,57 +23,18 @@
 
 ---
 
-## 図面翻訳を手動コピーペーストで止めてはいけない
+## tbc-acad-mcp とは
 
-建設・エンジニアリング図面には、仕様、注記、寸法、材料呼称、凡例など、密度の高い技術テキストが含まれています。それらの図面が外国語で届いた場合、翻訳は選択肢ではなく必須です。プロジェクトチームが行動を開始する前に、翻訳が完了していなければなりません。
+`tbc-acad-mcp` は Nour Rouas がメンテナンスする [bimwright/dwg-mcp](https://github.com/bimwright/dwg-mcp) のフォークです。TBC-MCP スイートの AutoCAD 側で、[tbc-revit-mcp](https://github.com/desarrolloteambimcivil/tbc_mcp_revit) と組み合わせて使います。エージェントは AutoCAD や Civil 3D の DWG 図面から画層、ジオメトリ、テキスト、引出線、ブロック属性を読み取り、その情報を Revit で活用できます。
 
-通常のワークフローは苦痛を伴います。エンティティを一つずつ選択し、翻訳ツールにコピーし、貼り付け、フォントを修正し（SHXフォントはベトナム語やCJKをレンダリングできません）、高さを調整し、位置がずれていないことを確認します。これをシートあたり数百のテキスト断片、プロジェクトあたり数十枚のシートについて繰り返します。
+`tbc-acad-mcp` は MCP クライアントと実行中の AutoCAD セッションをつなぐ**ローカル**ブリッジです。2つの部分から構成されます:
 
-`dwg-mcp` はこのループをたった2ステップに圧縮します。テキストを選択し、AIエージェントが読み取り、翻訳し、その場で書き換えます — 正しいフォント、正しい高さ、正しい空間グルーピング、そして1回のアンドゥで。
+- **tbc-acad-mcp.exe**: Claude Code、Cursor、OpenCode などの stdio MCP クライアントから起動される .NET 8 の MCP サーバー。
+- **TbcAcadMcp.Plugin.AcadNN**: AutoCAD（および Civil 3D）内にロードされ、図面データベースに対してコマンドを実行するバージョン別アドインシェル。
 
----
+サーバーとプラグインは、AutoCAD 2022–2024 では TCP NDJSON、2025–2027 では名前付きパイプ（ループバック、ファイアウォールのプロンプトなし）で通信します。すべてはあなたのマシン上で動作します。
 
-## dwg-mcp とは
-
-`dwg-mcp` は、Autodesk AutoCAD 2022-2027 のDWGワークフローのためのローカルMCPゲートウェイです。
-
-2つの部分から構成されます:
-
-- **Bimwright.Dwg.Server**: .NET 8 のMCPサーバーで、Claude Code、Cursor、OpenCode、またはその他の stdio MCP クライアントから起動されます。
-- **Bimwright.Dwg.Plugin**: バージョン固有のAutoCADアドインシェルで、AutoCAD内にロードされ、図面データベースに対してコマンドを実行します。
-
-エージェントはMCPで通信します。サーバーはローカルワイヤー経由でプラグインと通信します。AutoCAD 2022–2024 ではTCP NDJSON、2025–2027 では名前付きパイプ（ループバック、ファイアウォールプロンプトを回避）を使用します。プラグインはAutoCAD .NET APIと通信します。
-
-すべてはあなたのマシン上で動作します。
-
----
-
-## なぜ重要か
-
-AIエージェントは、「選択したすべてのテキストをベトナム語に翻訳して」と指示し、それを図面上で正しく実行することを可能にします。しかし、意図だけでは十分ではありません。AutoCADのテキスト操作には、空間レイアウトの理解、断片のグルーピング、フォントの制限、MTextとDBTextの違い、ブロック参照、高さスケーリングへの対応が必要です。
-
-`dwg-mcp` はその複雑さを処理します:
-
-- **空間クラスタリング**: 断片化されたテキストを論理的な文にグループ化します（ブロック、行、列、段落ごと）。
-- **自動フォント処理**: Unicode対応のテキストスタイルを作成して適用します — SHXの疑問符はもうありません。
-- **高さスケーリング**: ラテン文字とCJKテキストの視覚的密度の違いを補正します。
-- **MText変換**: 安全な場合、単行の断片を複数行テキストにアップグレードします。
-- **単一アンドゥ**: 各操作をトランザクションでラップします。
-
----
-
-## 使用実績
-
-実際の建設図面での19日間のアクティブ使用における220件の完了したツールコール。98.2%の成功率。
-
-| ツール | コール数 |
-|------|-------|
-| get_selected_texts | ~100 |
-| translate_and_rewrite | ~77 |
-| send_code | ~28 |
-| collapse_and_rewrite | ~11 |
-| update_texts | ~10 |
-| apply_unicode_style | ~4 |
+現時点でフォークが追加したのは、Civil 3D など AutoCAD ベースの製品での読み込みと独自の製品 ID です。上流のテキスト翻訳ワークフロー（空間クラスタリング、Unicode 文字スタイル、その場での書き換え）はそのまま維持しています。[CHANGELOG.md](CHANGELOG.md) を参照してください。
 
 ---
 
@@ -84,7 +49,7 @@ AIエージェントは、「選択したすべてのテキストをベトナム
               | stdio MCP
               v
 +---------------------------+
-| Bimwright.Dwg.Server      |
+| tbc-acad-mcp.exe          |
 | .NET 8 / C#               |
 +---------------------------+
               |
@@ -92,7 +57,7 @@ AIエージェントは、「選択したすべてのテキストをベトナム
               | トークン認証
               v
 +---------------------------+
-| Bimwright.Dwg.Plugin      |
+| TbcAcadMcp.Plugin         |
 | AutoCAD 2022-2027 シェル  |
 +---------------------------+
               |
@@ -110,9 +75,9 @@ AIエージェントは、「選択したすべてのテキストをベトナム
 
 ## インストール
 
-[GitHub Releases](https://github.com/bimwright/dwg-mcp/releases/latest) から setup ZIP（`DwgMcp.Setup-*-win-x64.zip`）を入手してください。同梱する年次バージョンは、ダウンロードしたZIP内の `manifest.json` の `packedAutocadYears` と bundle の `PackageContents.xml` で確認し、実行中のAutoCADで検証済みの年次バージョンはリリースノートで確認してください。ソースには2022–2027のシェルがありますが、同梱プラグインと実ホストの検証範囲はリリースごとに異なります。未同梱の年次バージョンは、対応するAutoCAD SDKでソースからビルドします。展開して `install.ps1` を実行してください（全文は英語 README）。
+[GitHub Releases](https://github.com/desarrolloteambimcivil/tbc_mcp_autocad/releases/latest) から setup ZIP（`TbcAcadMcp.Setup-*-win-x64.zip`）を入手してください。同梱する年次バージョンは、ダウンロードしたZIP内の `manifest.json` の `packedAutocadYears` と bundle の `PackageContents.xml` で確認し、実行中のAutoCADで検証済みの年次バージョンはリリースノートで確認してください。ソースには2022–2027のシェルがありますが、同梱プラグインと実ホストの検証範囲はリリースごとに異なります。未同梱の年次バージョンは、対応するAutoCAD SDKでソースからビルドします。展開して `install.ps1` を実行してください（全文は英語 README）。
 
-`dotnet tool install -g Bimwright.Dwg.Server` は使わないでください。
+`dotnet tool install -g TbcAcadMcp.Server` は使わないでください。
 
 **開発者:** ビルド後 `pwsh scripts/install.ps1 -Version 2024`、または Debug DLL を `NETLOAD`。
 
@@ -123,8 +88,8 @@ MCP クライアント設定（例: `.mcp.json`）に追加:
 ```json
 {
   "mcpServers": {
-    "bimwright-dwg": {
-      "command": "bimwright-dwg",
+    "tbc-acad-mcp": {
+      "command": "tbc-acad-mcp",
       "args": []
     }
   }
@@ -142,29 +107,29 @@ PID、またはインスタンスが一つだけの4桁年で初期ターゲッ�
 ```json
 {
   "mcpServers": {
-    "bimwright-dwg": {
-      "command": "bimwright-dwg",
+    "tbc-acad-mcp": {
+      "command": "tbc-acad-mcp",
       "args": ["--target", "pid:12345"]
     }
   }
 }
 ```
 
-`--read-only` で書き込み toolset を外します。`--toolsets all`、または必要な既定を**含めた**明示リストを使ってください（カスタムリストは既定セットを**置き換え**ます。例: `query,modify,meta,view,annotation`）。環境変数: `BIMWRIGHT_DWG_TOOLSETS=…`。
+`--read-only` で書き込み toolset を外します。`--toolsets all`、または必要な既定を**含めた**明示リストを使ってください（カスタムリストは既定セットを**置き換え**ます。例: `query,modify,meta,view,annotation`）。環境変数: `TBC_ACAD_MCP_TOOLSETS=…`。
 
-`dwg_send_code` は `meta` でデフォルト登録されます。`--enable-send-code` / `--disable-send-code` でサーバー側を切り替えます（JSON `enableSendCode`、環境変数 `BIMWRIGHT_DWG_ENABLE_SEND_CODE`）。無効な場合、C# を含むバッチは送信前に全体を拒否します。`MCPDISABLECODE` / `MCPENABLECODE` は AutoCAD セッション側だけを切り替え、サーバーの無効設定を上書きしません。`dwg_run_lisp` は互換性のため登録を維持しますが、サーバーとプラグインの両方ですべての要求を拒否します。このビルドには LISP の隔離実行環境やスクリプトの信頼を確立する仕組みがありません。`--read-only` は両ツールを除外します。
+`dwg_send_code` は `meta` でデフォルト登録されます。`--enable-send-code` / `--disable-send-code` でサーバー側を切り替えます（JSON `enableSendCode`、環境変数 `TBC_ACAD_MCP_ENABLE_SEND_CODE`）。無効な場合、C# を含むバッチは送信前に全体を拒否します。`MCPDISABLECODE` / `MCPENABLECODE` は AutoCAD セッション側だけを切り替え、サーバーの無効設定を上書きしません。`dwg_run_lisp` は互換性のため登録を維持しますが、サーバーとプラグインの両方ですべての要求を拒否します。このビルドには LISP の隔離実行環境やスクリプトの信頼を確立する仕組みがありません。`--read-only` は両ツールを除外します。
 
 `dwg_send_code` はインラインの同期スニペットのみを受け付け、`async`/`await` と `#load` ディレクティブは実行前に拒否します。AutoCAD API は呼び出し元スレッドで使い、`Task.Run` や別スレッドへ移さないでください。戻り値は JSON DTO に限定し、ネストした AutoCAD/COM オブジェクトも拒否します。`dwg_inspect_lisp` は静的解析に利用できます。2,000,000 文字を超えるソースは完全検査不能として危険判定になり、200 件の表示上限に達しても危険度の検出は続きます。正規表現にはタイムアウトがあり、時間切れの検査は不完全かつ危険と報告し、`clean` は返しません。
 
 ---
 
-コールログは**デフォルト無効**です。`--enable-call-log` / `--disable-call-log`（JSON `enableCallLog`、環境変数 `BIMWRIGHT_DWG_ENABLE_CALL_LOG`）で切り替えます。優先順位は JSON → 環境変数 → CLI、同じペアでは最後のフラグが優先されます。無効時はコールログ・ジャーナルを作成・追記せず、既存ログも削除しません。有効時の `%LOCALAPPDATA%\Bimwright\dwg-mcp\dwg-mcp-calls.jsonl` はマスク済みパラメーターと時間・成否メタデータのみを記録し、応答は記録しません。入れ子バッチを含む code フィールドは文字数と元の UTF-8 本文の SHA-256 のみ、ソースを含み得るコード関連エラー本文は省略します。コード本文キャッシュ・本文ジャーナルは未実装です。ToolBaker の適応的使用記録、診断ログ、メモリ内 History は別機能で、プラグインには永続コールログ writer がありません。
+コールログは**デフォルト無効**です。`--enable-call-log` / `--disable-call-log`（JSON `enableCallLog`、環境変数 `TBC_ACAD_MCP_ENABLE_CALL_LOG`）で切り替えます。優先順位は JSON → 環境変数 → CLI、同じペアでは最後のフラグが優先されます。無効時はコールログ・ジャーナルを作成・追記せず、既存ログも削除しません。有効時の `%LOCALAPPDATA%\NourRouas\tbc-acad-mcp\tbc-acad-mcp-calls.jsonl` はマスク済みパラメーターと時間・成否メタデータのみを記録し、応答は記録しません。入れ子バッチを含む code フィールドは文字数と元の UTF-8 本文の SHA-256 のみ、ソースを含み得るコード関連エラー本文は省略します。コード本文キャッシュ・本文ジャーナルは未実装です。ToolBaker の適応的使用記録、診断ログ、メモリ内 History は別機能で、プラグインには永続コールログ writer がありません。
 
 ## アクティビティ通知と History
 
-通知は既定で有効です。キーボードフォーカスを奪わない1枚のカードに `dwg-mcp <年>`、最新ツール名、**Success · Failed · Capture** を表示します。数字はオドメーター式に動き、画像は固定フレームの中央に表示され、最低5秒保持してクロスフェードします。Windows の **Animation effects** が無効なら即時更新します。ホバー中は閉じず、アイドル時間は10/20/30/60秒（既定20秒）。AutoCAD が最小化中またはモーダル状態ならカウントを保持して後で表示します。`MCPTOAST` で切り替え、`MCPSETTINGS` で設定します。Branding は既定で無効、ホバー時のみ表示し、再起動後も設定を保持します。保存失敗を表示してもセッション内の選択は有効です。
+通知は既定で有効です。キーボードフォーカスを奪わない1枚のカードに `tbc-acad-mcp <年>`、最新ツール名、**Success · Failed · Capture** を表示します。数字はオドメーター式に動き、画像は固定フレームの中央に表示され、最低5秒保持してクロスフェードします。Windows の **Animation effects** が無効なら即時更新します。ホバー中は閉じず、アイドル時間は10/20/30/60秒（既定20秒）。AutoCAD が最小化中またはモーダル状態ならカウントを保持して後で表示します。`MCPTOAST` で切り替え、`MCPSETTINGS` で設定します。Branding は既定で無効、ホバー時のみ表示し、再起動後も設定を保持します。保存失敗を表示してもセッション内の選択は有効です。
 
-カード本体をクリックすると **History** を開く／フォーカスしてカードを閉じます。×は閉じるだけ、サムネイルは許可された画像を開いてカードを閉じます。`MCPHISTORY` も同じモデルレスウィンドウを開きます。プラグイン処理済み呼び出しの最新1,000件の簡潔な結果をメモリに保持し、通知が無効でも検索、Success/Failed・Read/Write フィルター、実行時間、選択詳細を利用できます。カードを閉じても履歴は残り、**New session** で消去します。永続ログを追加せず、生の入力、コード本文、JSON 結果は保持しません。サーバーのみのツール通知はまだ含みません。設定キー `enableToast`、`toastIdleSeconds`、`showBranding` は `%LOCALAPPDATA%\Bimwright\dwg-mcp\settings.json` に保存します。
+カード本体をクリックすると **History** を開く／フォーカスしてカードを閉じます。×は閉じるだけ、サムネイルは許可された画像を開いてカードを閉じます。`MCPHISTORY` も同じモデルレスウィンドウを開きます。プラグイン処理済み呼び出しの最新1,000件の簡潔な結果をメモリに保持し、通知が無効でも検索、Success/Failed・Read/Write フィルター、実行時間、選択詳細を利用できます。カードを閉じても履歴は残り、**New session** で消去します。永続ログを追加せず、生の入力、コード本文、JSON 結果は保持しません。サーバーのみのツール通知はまだ含みません。設定キー `enableToast`、`toastIdleSeconds`、`showBranding` は `%LOCALAPPDATA%\NourRouas\tbc-acad-mcp\settings.json` に保存します。
 
 ---
 
@@ -176,7 +141,7 @@ GitHub 確認は同じ stable release/tag に両 component を照合し、共有
 
 両 `update.components`、notification 全文、`lookup_reason`、`protected_component_reasons`、`unobserved_components` を確認します。`UPDATE_CHECK_UNAVAILABLE` は外部 lookup の失敗であり runtime 障害ではありません。`LOCAL_VERSION_AHEAD` は情報通知で、downgrade しません。`prepare_update` と `bundle_update_proposal_allowed=true` の場合だけ更新提案を行い、インストールには承認が必要です。health は package の取得・インストール、client config の変更、図面の save/close、process restart を行いません。
 
-reconnect 後、同じ接続の新しい initialize と `tools/list` の `_meta["bimwright/dwg-mcp/runtime"]`・schema・annotations を `client_verification` と比較します。server 自体は client cache refresh を証明できません。read-only でも利用可能で、GitHub option のため `openWorldHint=true` です。[agent guide](AGENTS.md)。公開 v2.0.1 には未収録です。host-free protocol と plugin 2024/2027 build は検証済みですが、実ホスト受入は未完了です。
+reconnect 後、同じ接続の新しい initialize と `tools/list` の `_meta["desarrolloteambimcivil/tbc_mcp_autocad/runtime"]`・schema・annotations を `client_verification` と比較します。server 自体は client cache refresh を証明できません。read-only でも利用可能で、GitHub option のため `openWorldHint=true` です。[agent guide](AGENTS.md)。公開 v2.0.1 には未収録です。host-free protocol と plugin 2024/2027 build は検証済みですが、実ホスト受入は未完了です。
 
 ## ツール
 
@@ -220,7 +185,7 @@ development のデフォルト起動では45のツール（クエリ（`dwg_get_
 | `dwg_erase_entities` | 16進ハンドルで識別されるエンティティを削除 |
 | `dwg_offset_entities` | 曲線エンティティをオフセットし、生成されたハンドルを返す |
 | `dwg_translate_and_rewrite` | **推奨。** 翻訳テキストを書き戻す: アンカー、削除、MText、フォント、高さ |
-| `dwg_apply_unicode_style` | `Bimwright_Unicode` スタイルが存在することを確認し、ターゲットに適用 |
+| `dwg_apply_unicode_style` | `TBC_Unicode` スタイルが存在することを確認し、ターゲットに適用 |
 | `dwg_collapse_and_rewrite` | 明示的な形状制御による低レベル書き換えプリミティブ |
 | `dwg_list_available_targets` | PID、ターゲットID、プロセス開始時刻付きで各インスタンスを表示 |
 | `dwg_get_current_target` | バインド状態、世代、PID、確認済み図面を表示 |
@@ -352,8 +317,8 @@ development のデフォルト起動では45のツール（クエリ（`dwg_get_
 
 1. `dwg_get_drawing_info` を実行。
 2. `dwg_list_layers` を実行。
-3. `dwg_create_layer` で `BIMWRIGHT_TEST` を作成。
-4. `dwg_create_point`、`dwg_create_polyline`、`dwg_create_rectangle`、`dwg_create_arc`、`dwg_create_ellipse` で `BIMWRIGHT_TEST` 上に点、ポリライン、長方形、円弧、楕円を作成。返された16進ハンドルを記録し、1つの曲線（円弧または楕円など）を色とオフセットの確認用に予約。
+3. `dwg_create_layer` で `TBC_TEST` を作成。
+4. `dwg_create_point`、`dwg_create_polyline`、`dwg_create_rectangle`、`dwg_create_arc`、`dwg_create_ellipse` で `TBC_TEST` 上に点、ポリライン、長方形、円弧、楕円を作成。返された16進ハンドルを記録し、1つの曲線（円弧または楕円など）を色とオフセットの確認用に予約。
 5. `dwg_query_entities`、`dwg_count_entities`、`dwg_select_by_layer`、`dwg_select_by_type` でそれらのエンティティを画層とタイプでクエリ、カウント、選択。選択ツールがハンドルリストを返し、ピックファースト選択を変更しないことを確認。
 6. `dwg_move_entities`、`dwg_rotate_entities`、`dwg_scale_entities` で予約外のスクラッチエンティティを移動、回転、拡大縮小。
 7. `dwg_copy_entities` で予約外のスクラッチエンティティを1つコピーし、その後 `dwg_erase_entities` でその使い捨てのコピー一時エンティティのみを削除。
@@ -452,7 +417,7 @@ rewrite成功時の `final_text_height` は、Unicode正規化と最終scaleの�
 ## プロジェクト構造
 
 ```
-dwg-mcp/
+tbc-acad-mcp/
 ├── src/
 │   ├── Bimwright.Dwg.sln
 │   ├── server/            # .NET 8 MCP サーバー (グローバルツール)
@@ -471,23 +436,18 @@ dwg-mcp/
 
 ---
 
-## bimwright ファミリー
+## TBC-MCP と上流プロジェクト
 
-AI アシスタントと BIM・CAD アプリケーションをつなぐオープンソースのツール。
+- [**tbc-revit-mcp**](https://github.com/desarrolloteambimcivil/tbc_mcp_revit) — Autodesk® Revit®（[bimwright/rvt-mcp](https://github.com/bimwright/rvt-mcp) のフォーク）
+- [**tbc-acad-mcp**](https://github.com/desarrolloteambimcivil/tbc_mcp_autocad) — Autodesk® AutoCAD® / Civil 3D®（[bimwright/dwg-mcp](https://github.com/bimwright/dwg-mcp) のフォーク）
 
-**bimwright** は **BIM** と **wright** を組み合わせた名前です。wright は、ものを作る人や建てる人を表す古い英語で、*shipwright*（船大工）などに使われます。
-
-- [**rvt-mcp**](https://github.com/bimwright/rvt-mcp) — Autodesk® Revit®
-- [**dwg-mcp**](https://github.com/bimwright/dwg-mcp) — Autodesk® AutoCAD®
-- [**nwd-mcp**](https://github.com/bimwright/nwd-mcp) — Autodesk® Navisworks®
-- [**ipt-mcp**](https://github.com/bimwright/ipt-mcp) — Autodesk® Inventor®
-- [**bim-wiki**](https://github.com/bimwright/bim-wiki) — ベトナム語ファーストのBIM知識ベース
+どちらも Khoa Le によるオープンソースの [bimwright](https://github.com/bimwright) ゲートウェイを基にしています。原作者に感謝します。
 
 ---
 
 ## 免責事項
 
-AutoCAD および Autodesk は Autodesk, Inc. の登録商標です。bimwright は独立したオープンソースプロジェクトであり、Autodesk, Inc. とは提携、スポンサー、または推奨関係にありません。
+AutoCAD および Autodesk は Autodesk, Inc. の登録商標です。tbc-acad-mcp は独立したオープンソースプロジェクトであり、Autodesk, Inc. とは提携、スポンサー、または推奨関係にありません。
 
 ---
 
@@ -501,32 +461,32 @@ AutoCAD および Autodesk は Autodesk, Inc. の登録商標です。bimwright 
 
 `dwg_send_code` 以外の各ツールは read-only、destructive、idempotent、open-world の各属性を明示します。通常の全ツールモードは69ツール、既定の読み取り専用モードは17ツール、`--toolsets all --read-only` は以下の23読み取り専用ツールです。ズームは一時的なUI状態を変更できます。ターゲット切り替えは読み取り専用モードから除外されます。キャプチャ、領域検査、ビュー復元も画像ファイルを作成するため除外されます。`dwg_health` は読み取り専用ですが、明示的な更新チェックではGitHubに接続できます。
 
-許可するツールだけに正確なルールを設定してください。`mcp__dwg-mcp__*` のワイルドカードは図面編集、ファイル書き込み、コード実行も許可するため避けてください。`dwg_send_code` は annotations を持たず、この読み取り専用リストには含まれません。継続的な実行許可はMCPクライアントで明示的に選択してください。
+許可するツールだけに正確なルールを設定してください。`mcp__tbc-acad-mcp__*` のワイルドカードは図面編集、ファイル書き込み、コード実行も許可するため避けてください。`dwg_send_code` は annotations を持たず、この読み取り専用リストには含まれません。継続的な実行許可はMCPクライアントで明示的に選択してください。
 
 <!-- read-only-allowlist:start -->
 ```text
-mcp__dwg-mcp__dwg_count_entities
-mcp__dwg-mcp__dwg_create_bake_issue_draft
-mcp__dwg-mcp__dwg_get_block_attributes
-mcp__dwg-mcp__dwg_get_current_target
-mcp__dwg-mcp__dwg_get_drawing_info
-mcp__dwg-mcp__dwg_get_drawing_profile
-mcp__dwg-mcp__dwg_get_entity_properties
-mcp__dwg-mcp__dwg_get_selected_texts
-mcp__dwg-mcp__dwg_get_variables
-mcp__dwg-mcp__dwg_health
-mcp__dwg-mcp__dwg_inspect_lisp
-mcp__dwg-mcp__dwg_list_available_targets
-mcp__dwg-mcp__dwg_list_bake_suggestions
-mcp__dwg-mcp__dwg_list_baked_tools
-mcp__dwg-mcp__dwg_list_blocks
-mcp__dwg-mcp__dwg_list_layers
-mcp__dwg-mcp__dwg_list_recent_drawings
-mcp__dwg-mcp__dwg_query_entities
-mcp__dwg-mcp__dwg_select_by_layer
-mcp__dwg-mcp__dwg_select_by_type
-mcp__dwg-mcp__dwg_zoom_extents
-mcp__dwg-mcp__dwg_zoom_to_entity
-mcp__dwg-mcp__dwg_zoom_window
+mcp__tbc-acad-mcp__dwg_count_entities
+mcp__tbc-acad-mcp__dwg_create_bake_issue_draft
+mcp__tbc-acad-mcp__dwg_get_block_attributes
+mcp__tbc-acad-mcp__dwg_get_current_target
+mcp__tbc-acad-mcp__dwg_get_drawing_info
+mcp__tbc-acad-mcp__dwg_get_drawing_profile
+mcp__tbc-acad-mcp__dwg_get_entity_properties
+mcp__tbc-acad-mcp__dwg_get_selected_texts
+mcp__tbc-acad-mcp__dwg_get_variables
+mcp__tbc-acad-mcp__dwg_health
+mcp__tbc-acad-mcp__dwg_inspect_lisp
+mcp__tbc-acad-mcp__dwg_list_available_targets
+mcp__tbc-acad-mcp__dwg_list_bake_suggestions
+mcp__tbc-acad-mcp__dwg_list_baked_tools
+mcp__tbc-acad-mcp__dwg_list_blocks
+mcp__tbc-acad-mcp__dwg_list_layers
+mcp__tbc-acad-mcp__dwg_list_recent_drawings
+mcp__tbc-acad-mcp__dwg_query_entities
+mcp__tbc-acad-mcp__dwg_select_by_layer
+mcp__tbc-acad-mcp__dwg_select_by_type
+mcp__tbc-acad-mcp__dwg_zoom_extents
+mcp__tbc-acad-mcp__dwg_zoom_to_entity
+mcp__tbc-acad-mcp__dwg_zoom_window
 ```
 <!-- read-only-allowlist:end -->

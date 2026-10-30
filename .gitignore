@@ -35,7 +35,9 @@ lib/acad24/*.dll
 
 # Claude Code
 .claude/
+# Ignore stray/nested CLAUDE.md (local agent notes) but track the repo-root project guide.
 CLAUDE.md
+!/CLAUDE.md
 
 # Internal process docs — plans, brainstorms, reviews, dev-roadmaps. NOT for public release.
 docs/superpowers/

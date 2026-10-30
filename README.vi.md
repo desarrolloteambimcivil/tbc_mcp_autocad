@@ -1,15 +1,19 @@
-<!-- mcp-name: io.github.bimwright/dwg-mcp -->
+<!-- mcp-name: io.github.desarrolloteambimcivil/tbc-acad-mcp -->
+
+<h1 align="center">tbc-acad-mcp</h1>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/bimwright/.github/master/assets/logos/dwg-mcp.png" alt="dwg-mcp" width="180" />
+  MCP gateway cho Autodesk AutoCAD và Civil 3D — đọc và chỉnh sửa bản vẽ DWG từ AI agent
 </p>
 
-<h1 align="center">dwg-mcp</h1>
+<p align="center">
+  bởi Nour Rouas — BIM developer/modeller tại TeamBIMCivil
+</p>
 
 <p align="center">
-  <a href="https://github.com/bimwright/dwg-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/dwg-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
+  <a href="https://github.com/desarrolloteambimcivil/tbc_mcp_autocad/actions/workflows/build.yml"><img src="https://github.com/desarrolloteambimcivil/tbc_mcp_autocad/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
-  <a href="#phiên-bản-autocad-hỗ-trợ"><img src="https://img.shields.io/badge/AutoCAD-2022--2027-186BFF" alt="AutoCAD 2022-2027" /></a>
+  <a href="#phiên-bản-autocad-hỗ-trợ"><img src="https://img.shields.io/badge/AutoCAD%20%2F%20Civil%203D-2022--2027-186BFF" alt="AutoCAD / Civil 3D 2022-2027" /></a>
   <a href="#công-cụ"><img src="https://img.shields.io/badge/MCP-45%20default%20%2B%20optional-6C47FF" alt="MCP tools" /></a>
 </p>
 
@@ -19,57 +23,18 @@
 
 ---
 
-## Dịch bản vẽ không nên dừng lại ở Copy-Paste thủ công
+## tbc-acad-mcp là gì
 
-Bản vẽ thi công và kỹ thuật chứa rất nhiều text — ghi chú kỹ thuật, chú thích vật liệu, legend, kích thước. Khi bản vẽ đến bằng tiếng nước ngoài, việc dịch là bắt buộc trước khi đội dự án có thể làm việc.
+`tbc-acad-mcp` là một bản fork của [bimwright/dwg-mcp](https://github.com/bimwright/dwg-mcp) do Nour Rouas duy trì. Đây là phần AutoCAD của bộ TBC-MCP, đi cùng [tbc-revit-mcp](https://github.com/desarrolloteambimcivil/tbc_mcp_revit): agent đọc layer, hình học, văn bản, leader và thuộc tính block từ bản vẽ DWG trong AutoCAD hoặc Civil 3D và có thể dùng thông tin đó trong Revit.
 
-Quy trình thông thường rất đau đầu: chọn text từng entity, copy sang translator, paste lại, sửa font (vì font SHX không hiển thị được tiếng Việt hay CJK), chỉnh chiều cao, hy vọng không có gì bị lệch. Nhân lên hàng trăm text fragment mỗi sheet, hàng chục sheet mỗi dự án.
+`tbc-acad-mcp` là cầu nối **cục bộ** giữa MCP client và phiên AutoCAD đang chạy. Gồm hai phần:
 
-`dwg-mcp` nén quy trình đó thành hai bước: chọn text, để AI agent đọc, dịch, và ghi lại tại chỗ — đúng font, đúng chiều cao, đúng nhóm spatial, và một lần undo duy nhất.
+- **tbc-acad-mcp.exe**: MCP server .NET 8 được khởi chạy bởi Claude Code, Cursor, OpenCode hoặc một stdio MCP client khác.
+- **TbcAcadMcp.Plugin.AcadNN**: các shell add-in theo từng phiên bản, được nạp trong AutoCAD (và Civil 3D) và thực thi lệnh trên cơ sở dữ liệu bản vẽ.
 
----
+Server giao tiếp với plugin qua TCP NDJSON cho AutoCAD 2022–2024 và named pipe (loopback, không có cảnh báo tường lửa) cho 2025–2027. Mọi thứ đều chạy trên máy của bạn.
 
-## dwg-mcp là gì
-
-`dwg-mcp` là cổng MCP cục bộ cho Autodesk AutoCAD 2022-2027.
-
-Gồm hai phần:
-
-- **Bimwright.Dwg.Server**: MCP server .NET 8, được Claude Code, Cursor, OpenCode hoặc MCP client khác khởi chạy.
-- **Bimwright.Dwg.Plugin**: các shell add-in theo từng phiên bản AutoCAD, thực thi lệnh trực tiếp lên database bản vẽ.
-
-Agent nói MCP. Server nói với plugin qua local wire: TCP NDJSON cho AutoCAD 2022–2024, và Named Pipe (loopback, tránh firewall prompt) cho 2025–2027. Plugin nói AutoCAD .NET API.
-
-Mọi thứ chạy trên máy bạn.
-
----
-
-## Tại sao quan trọng
-
-AI agent cho phép mô tả "dịch tất cả text đã chọn sang tiếng Việt" và nó xảy ra — đúng — ngay trong bản vẽ. Nhưng chỉ intent thôi chưa đủ. Thao tác text trong AutoCAD đòi hỏi hiểu layout không gian, nhóm fragment, giới hạn font, MText vs DBText, block reference, và scaling chiều cao.
-
-`dwg-mcp` xử lý sự phức tạp đó:
-
-- **Spatial clustering** nhóm text rời rạc thành câu logic (theo block, hàng, cột, đoạn).
-- **Tự động xử lý font** tạo text style Unicode và áp dụng — không còn dấu hỏi SHX.
-- **Scaling chiều cao** bù trừ cho mật độ thị giác khác nhau giữa Latin và CJK.
-- **Chuyển đổi MText** nâng cấp single-line fragment thành multi-line text khi an toàn.
-- **Một lần undo** gói mỗi thao tác trong transaction.
-
----
-
-## Bằng chứng sử dụng
-
-220 tool call hoàn thành trong 19 ngày sử dụng thực tế trên bản vẽ thi công. Tỷ lệ thành công 98.2%.
-
-| Tool | Lượt gọi |
-|------|----------|
-| get_selected_texts | ~100 |
-| translate_and_rewrite | ~77 |
-| send_code | ~28 |
-| collapse_and_rewrite | ~11 |
-| update_texts | ~10 |
-| apply_unicode_style | ~4 |
+Hiện tại bản fork bổ sung khả năng nạp trong Civil 3D và các sản phẩm dựa trên AutoCAD khác, cùng định danh sản phẩm riêng. Quy trình dịch văn bản của upstream (gom cụm không gian, text style Unicode, ghi lại tại chỗ) được giữ nguyên. Xem [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -84,7 +49,7 @@ AI agent cho phép mô tả "dịch tất cả text đã chọn sang tiếng Vi�
               | stdio MCP
               v
 +---------------------------+
-| Bimwright.Dwg.Server      |
+| tbc-acad-mcp.exe          |
 | .NET 8 / C#               |
 +---------------------------+
               |
@@ -92,7 +57,7 @@ AI agent cho phép mô tả "dịch tất cả text đã chọn sang tiếng Vi�
               | token auth
               v
 +---------------------------+
-| Bimwright.Dwg.Plugin      |
+| TbcAcadMcp.Plugin         |
 | AutoCAD 2022-2027 shells |
 +---------------------------+
               |
@@ -110,9 +75,9 @@ Xem [ARCHITECTURE.md](ARCHITECTURE.md) để biết chi tiết về threading, d
 
 ## Cài đặt
 
-Tải setup ZIP từ [GitHub Releases](https://github.com/bimwright/dwg-mcp/releases/latest) (`DwgMcp.Setup-*-win-x64.zip`). Xem `packedAutocadYears` trong `manifest.json` và `PackageContents.xml` của bundle trong ZIP đã tải để biết các năm có plugin; xem ghi chú phát hành để biết các năm đã kiểm chứng trên AutoCAD đang chạy. Source có shell cho 2022–2027, còn plugin đóng gói và host đã kiểm chứng tùy từng bản phát hành. Năm chưa có trong gói cần build plugin từ source với AutoCAD SDK tương ứng. Giải nén rồi chạy `install.ps1` (xem README tiếng Anh để copy-paste đầy đủ).
+Tải setup ZIP từ [GitHub Releases](https://github.com/desarrolloteambimcivil/tbc_mcp_autocad/releases/latest) (`TbcAcadMcp.Setup-*-win-x64.zip`). Xem `packedAutocadYears` trong `manifest.json` và `PackageContents.xml` của bundle trong ZIP đã tải để biết các năm có plugin; xem ghi chú phát hành để biết các năm đã kiểm chứng trên AutoCAD đang chạy. Source có shell cho 2022–2027, còn plugin đóng gói và host đã kiểm chứng tùy từng bản phát hành. Năm chưa có trong gói cần build plugin từ source với AutoCAD SDK tương ứng. Giải nén rồi chạy `install.ps1` (xem README tiếng Anh để copy-paste đầy đủ).
 
-Không `dotnet tool install -g Bimwright.Dwg.Server`.
+Không `dotnet tool install -g TbcAcadMcp.Server`.
 
 **Developer:** `pwsh scripts/install.ps1 -Version 2024` từ repo sau khi build; hoặc `NETLOAD` DLL Debug.
 
@@ -121,15 +86,15 @@ Không `dotnet tool install -g Bimwright.Dwg.Server`.
 ```json
 {
   "mcpServers": {
-    "bimwright-dwg": {
-      "command": "bimwright-dwg",
+    "tbc-acad-mcp": {
+      "command": "tbc-acad-mcp",
       "args": []
     }
   }
 }
 ```
 
-`dwg_send_code` mặc định có sẵn qua `meta`. `--enable-send-code` / `--disable-send-code` điều khiển server (JSON `enableSendCode`; env `BIMWRIGHT_DWG_ENABLE_SEND_CODE`). Khi tắt, batch chứa C# cũng bị từ chối trước khi gửi bất kỳ lệnh nào. `MCPDISABLECODE` tắt C# trong session AutoCAD; `MCPENABLECODE` chỉ bật lại phía host, không ghi đè công tắc server. `dwg_run_lisp` giữ tên để tương thích nhưng từ chối mọi yêu cầu ở cả server và plugin. Bản này chưa có môi trường cách ly LISP hoặc cơ chế xác lập script tin cậy. `--read-only` gỡ cả hai tool.
+`dwg_send_code` mặc định có sẵn qua `meta`. `--enable-send-code` / `--disable-send-code` điều khiển server (JSON `enableSendCode`; env `TBC_ACAD_MCP_ENABLE_SEND_CODE`). Khi tắt, batch chứa C# cũng bị từ chối trước khi gửi bất kỳ lệnh nào. `MCPDISABLECODE` tắt C# trong session AutoCAD; `MCPENABLECODE` chỉ bật lại phía host, không ghi đè công tắc server. `dwg_run_lisp` giữ tên để tương thích nhưng từ chối mọi yêu cầu ở cả server và plugin. Bản này chưa có môi trường cách ly LISP hoặc cơ chế xác lập script tin cậy. `--read-only` gỡ cả hai tool.
 
 `dwg_send_code` chỉ nhận snippet đồng bộ được gửi trực tiếp: `async`/`await` và directive `#load` bị chặn trước thực thi. Giữ AutoCAD API trên luồng gọi; không chuyển sang `Task.Run` hoặc luồng khác. Chỉ trả DTO JSON; object AutoCAD/COM bị từ chối kể cả khi lồng nhau. `dwg_inspect_lisp` vẫn phân tích tĩnh: nguồn quá 2.000.000 ký tự bị đánh dấu không thể kiểm tra đầy đủ/nguy hiểm; giới hạn hiển thị 200 findings không làm mất phát hiện mức nguy hiểm. Regex có timeout; scan hết thời gian được báo chưa đầy đủ/nguy hiểm, không trả `clean`.
 
@@ -144,25 +109,25 @@ Trong `--read-only`, `dwg_switch_target` không có trong catalog và gọi tr�
 ```json
 {
   "mcpServers": {
-    "bimwright-dwg": {
-      "command": "bimwright-dwg",
+    "tbc-acad-mcp": {
+      "command": "tbc-acad-mcp",
       "args": ["--target", "pid:12345"]
     }
   }
 }
 ```
 
-Dùng `--read-only` để gỡ toolset write-capable. Dùng `--toolsets all` hoặc danh sách **có đủ default bạn cần** (list tùy chỉnh **thay** default — ví dụ `query,modify,meta,view,annotation`). Env: `BIMWRIGHT_DWG_TOOLSETS=…`.
+Dùng `--read-only` để gỡ toolset write-capable. Dùng `--toolsets all` hoặc danh sách **có đủ default bạn cần** (list tùy chỉnh **thay** default — ví dụ `query,modify,meta,view,annotation`). Env: `TBC_ACAD_MCP_TOOLSETS=…`.
 
 ---
 
-Call log **mặc định tắt**. Dùng `--enable-call-log` / `--disable-call-log` (JSON `enableCallLog`; env `BIMWRIGHT_DWG_ENABLE_CALL_LOG`). Thứ tự ưu tiên: JSON → env → CLI; flag bật/tắt xuất hiện cuối thắng. Khi tắt, server không tạo/ghi thêm call log hoặc call journal và không xoá log cũ. Khi bật, `%LOCALAPPDATA%\Bimwright\dwg-mcp\dwg-mcp-calls.jsonl` chỉ ghi tham số đã redact và metadata thời lượng/kết quả, không ghi response. Trường code, kể cả trong batch lồng nhau, chỉ lưu độ dài ký tự và SHA-256 của body UTF-8 gốc; bỏ nội dung lỗi liên quan code vì có thể chứa source. Chưa triển khai cache body hoặc body journal. ToolBaker adaptive usage, diagnostic log và History trong RAM độc lập với công tắc này; plugin không có writer call log bền vững.
+Call log **mặc định tắt**. Dùng `--enable-call-log` / `--disable-call-log` (JSON `enableCallLog`; env `TBC_ACAD_MCP_ENABLE_CALL_LOG`). Thứ tự ưu tiên: JSON → env → CLI; flag bật/tắt xuất hiện cuối thắng. Khi tắt, server không tạo/ghi thêm call log hoặc call journal và không xoá log cũ. Khi bật, `%LOCALAPPDATA%\NourRouas\tbc-acad-mcp\tbc-acad-mcp-calls.jsonl` chỉ ghi tham số đã redact và metadata thời lượng/kết quả, không ghi response. Trường code, kể cả trong batch lồng nhau, chỉ lưu độ dài ký tự và SHA-256 của body UTF-8 gốc; bỏ nội dung lỗi liên quan code vì có thể chứa source. Chưa triển khai cache body hoặc body journal. ToolBaker adaptive usage, diagnostic log và History trong RAM độc lập với công tắc này; plugin không có writer call log bền vững.
 
 ## Toast hoạt động và History
 
-Toast mặc định bật, dùng một thẻ không lấy focus bàn phím: tiêu đề `dwg-mcp <năm>`, dòng tool mới nhất và bộ đếm **Success · Failed · Capture**. Bộ đếm cuộn kiểu odometer; ảnh nằm giữa khung cố định, giữ ít nhất 5 giây và chuyển ảnh bằng cross-fade. Tắt **Animation effects** trong Windows để cập nhật ngay không animation. Hover giữ thẻ mở; thời gian idle là 10/20/30/60 giây (mặc định 20). AutoCAD thu nhỏ hoặc modal thì giữ số đếm và hiện lại khi có thể. `MCPTOAST` bật/tắt; `MCPSETTINGS` chỉnh toast và branding. Branding mặc định tắt, chỉ hiện khi hover và lưu qua lần khởi động; lỗi lưu được báo nhưng lựa chọn vẫn có hiệu lực trong phiên.
+Toast mặc định bật, dùng một thẻ không lấy focus bàn phím: tiêu đề `tbc-acad-mcp <năm>`, dòng tool mới nhất và bộ đếm **Success · Failed · Capture**. Bộ đếm cuộn kiểu odometer; ảnh nằm giữa khung cố định, giữ ít nhất 5 giây và chuyển ảnh bằng cross-fade. Tắt **Animation effects** trong Windows để cập nhật ngay không animation. Hover giữ thẻ mở; thời gian idle là 10/20/30/60 giây (mặc định 20). AutoCAD thu nhỏ hoặc modal thì giữ số đếm và hiện lại khi có thể. `MCPTOAST` bật/tắt; `MCPSETTINGS` chỉnh toast và branding. Branding mặc định tắt, chỉ hiện khi hover và lưu qua lần khởi động; lỗi lưu được báo nhưng lựa chọn vẫn có hiệu lực trong phiên.
 
-Bấm thân thẻ mở/focus **History** rồi đóng thẻ; × chỉ đóng; bấm thumbnail mở ảnh qua allowlist rồi đóng thẻ. `MCPHISTORY` mở cùng cửa sổ modeless. History giữ 1.000 kết quả gọn gần nhất của lệnh qua plugin trong RAM, kể cả khi toast tắt; hỗ trợ tìm kiếm, lọc Success/Failed và Read/Write, thời lượng và chi tiết khi chọn dòng. Đóng thẻ không xoá History; **New session** xoá danh sách. History không thêm file call log và không giữ raw input, body code hay JSON kết quả. Tool chỉ chạy ở server chưa có trong History. `enableToast`, `toastIdleSeconds`, `showBranding` lưu tại `%LOCALAPPDATA%\Bimwright\dwg-mcp\settings.json`.
+Bấm thân thẻ mở/focus **History** rồi đóng thẻ; × chỉ đóng; bấm thumbnail mở ảnh qua allowlist rồi đóng thẻ. `MCPHISTORY` mở cùng cửa sổ modeless. History giữ 1.000 kết quả gọn gần nhất của lệnh qua plugin trong RAM, kể cả khi toast tắt; hỗ trợ tìm kiếm, lọc Success/Failed và Read/Write, thời lượng và chi tiết khi chọn dòng. Đóng thẻ không xoá History; **New session** xoá danh sách. History không thêm file call log và không giữ raw input, body code hay JSON kết quả. Tool chỉ chạy ở server chưa có trong History. `enableToast`, `toastIdleSeconds`, `showBranding` lưu tại `%LOCALAPPDATA%\NourRouas\tbc-acad-mcp\settings.json`.
 
 ---
 
@@ -174,7 +139,7 @@ SHA-256 chỉ quan sát file trên disk lúc capture, không chứng minh memory
 
 Đọc cả `update.components`, thông báo đầy đủ, `lookup_reason`, `protected_component_reasons` và `unobserved_components`. `UPDATE_CHECK_UNAVAILABLE` là lookup bên ngoài thất bại, không phải lỗi runtime hay lý do xin phép cài; `LOCAL_VERSION_AHEAD` chỉ thông báo bản local mới hơn, không downgrade. Chỉ mode `prepare_update` cùng `bundle_update_proposal_allowed=true` cho phép đề xuất update, và vẫn cần quyền cài đặt. Các mode khác chỉ check/report/review. Health không tự cài, tải package, sửa config client, save/close drawing hay restart process. Xem [hướng dẫn agent](AGENTS.md).
 
-Sau reconnect, đối chiếu initialize và `tools/list` mới trên cùng connection với `client_verification`, gồm `_meta["bimwright/dwg-mcp/runtime"]`, schema và annotations. Server không thể tự chứng minh client đã refresh cache. Health vẫn có trong read-only; `openWorldHint=true` vì tùy chọn GitHub. Đây là source Unreleased, chưa có trong v2.0.1 đã phát hành. Đã kiểm tra giao thức host-free và build plugin 2024/2027; nghiệm thu trên AutoCAD đang chạy còn pending.
+Sau reconnect, đối chiếu initialize và `tools/list` mới trên cùng connection với `client_verification`, gồm `_meta["desarrolloteambimcivil/tbc_mcp_autocad/runtime"]`, schema và annotations. Server không thể tự chứng minh client đã refresh cache. Health vẫn có trong read-only; `openWorldHint=true` vì tùy chọn GitHub. Đây là source Unreleased, chưa có trong v2.0.1 đã phát hành. Đã kiểm tra giao thức host-free và build plugin 2024/2027; nghiệm thu trên AutoCAD đang chạy còn pending.
 
 ## Công cụ
 
@@ -218,7 +183,7 @@ Theo `output.next_calls` để phân trang `types`, `layers` hoặc `spaces`; m�
 | `dwg_erase_entities` | Erase entity theo hex handle |
 | `dwg_offset_entities` | Offset curve entity và trả về generated handle |
 | `dwg_translate_and_rewrite` | **Ưu tiên.** Ghi text đã dịch, tự động xử lý anchor, xóa, MText, font, chiều cao |
-| `dwg_apply_unicode_style` | Đảm bảo style `Bimwright_Unicode` tồn tại và áp dụng |
+| `dwg_apply_unicode_style` | Đảm bảo style `TBC_Unicode` tồn tại và áp dụng |
 | `dwg_collapse_and_rewrite` | Rewrite low-level với kiểm soát hình học chi tiết |
 | `dwg_list_available_targets` | Liệt kê từng instance với PID, target ID và thời điểm khởi động process |
 | `dwg_get_current_target` | Xem trạng thái binding, generation, PID và drawing đã xác minh |
@@ -350,8 +315,8 @@ Trong scratch DWG:
 
 1. Chạy `dwg_get_drawing_info`.
 2. Chạy `dwg_list_layers`.
-3. Tạo `BIMWRIGHT_TEST` bằng `dwg_create_layer`.
-4. Tạo point, polyline, rectangle, arc, và ellipse trên `BIMWRIGHT_TEST` bằng `dwg_create_point`, `dwg_create_polyline`, `dwg_create_rectangle`, `dwg_create_arc`, và `dwg_create_ellipse`; ghi lại hex handle trả về và giữ riêng một curve, ví dụ arc hoặc ellipse, để check color và offset.
+3. Tạo `TBC_TEST` bằng `dwg_create_layer`.
+4. Tạo point, polyline, rectangle, arc, và ellipse trên `TBC_TEST` bằng `dwg_create_point`, `dwg_create_polyline`, `dwg_create_rectangle`, `dwg_create_arc`, và `dwg_create_ellipse`; ghi lại hex handle trả về và giữ riêng một curve, ví dụ arc hoặc ellipse, để check color và offset.
 5. Query, count, và select các entity đó theo layer và type bằng `dwg_query_entities`, `dwg_count_entities`, `dwg_select_by_layer`, và `dwg_select_by_type`; xác nhận select tool trả về handle list và không đổi pickfirst selection.
 6. Move, rotate, và scale scratch entity không reserve bằng `dwg_move_entities`, `dwg_rotate_entities`, và `dwg_scale_entities`.
 7. Copy một scratch entity không reserve bằng `dwg_copy_entities`, rồi chỉ erase disposable copied temp entity đó bằng `dwg_erase_entities`.
@@ -446,7 +411,7 @@ Bảo mật dựa trên:
 ## Cấu trúc dự án
 
 ```
-dwg-mcp/
+tbc-acad-mcp/
 ├── src/
 │   ├── Bimwright.Dwg.sln
 │   ├── server/            # .NET 8 MCP server (global tool)
@@ -465,25 +430,18 @@ dwg-mcp/
 
 ---
 
-## Họ bimwright
+## TBC-MCP và upstream
 
-Các công cụ mã nguồn mở kết nối trợ lý AI với ứng dụng BIM và CAD.
+- [**tbc-revit-mcp**](https://github.com/desarrolloteambimcivil/tbc_mcp_revit) — Autodesk® Revit® (fork của [bimwright/rvt-mcp](https://github.com/bimwright/rvt-mcp))
+- [**tbc-acad-mcp**](https://github.com/desarrolloteambimcivil/tbc_mcp_autocad) — Autodesk® AutoCAD® và Civil 3D® (fork của [bimwright/dwg-mcp](https://github.com/bimwright/dwg-mcp))
 
-Tên **bimwright** ghép **BIM** với **wright**, một từ tiếng Anh cổ chỉ người thợ chế tạo hoặc xây dựng — như trong *shipwright* (thợ đóng tàu).
-
-Xem [cách đặt tên các gateway](https://github.com/bimwright/.github/blob/master/profile/README.vi.md#cách-đặt-tên).
-
-- [**rvt-mcp**](https://github.com/bimwright/rvt-mcp) — Autodesk® Revit®
-- [**dwg-mcp**](https://github.com/bimwright/dwg-mcp) — Autodesk® AutoCAD®
-- [**nwd-mcp**](https://github.com/bimwright/nwd-mcp) — Autodesk® Navisworks®
-- [**ipt-mcp**](https://github.com/bimwright/ipt-mcp) — Autodesk® Inventor®
-- [**bim-wiki**](https://github.com/bimwright/bim-wiki) — Kho kiến thức BIM ưu tiên tiếng Việt
+Cả hai đều dựa trên các gateway mã nguồn mở [bimwright](https://github.com/bimwright) của Khoa Le. Cảm ơn tác giả gốc.
 
 ---
 
 ## Tuyên bố miễn trừ
 
-Autodesk, AutoCAD và DWG là nhãn hiệu hoặc nhãn hiệu đã đăng ký của Autodesk, Inc. và/hoặc các công ty con, công ty liên kết. DWG là định dạng tệp gốc của phần mềm Autodesk AutoCAD. bimwright là dự án mã nguồn mở độc lập, không liên kết, không được tài trợ hay chứng thực bởi Autodesk, Inc.
+Autodesk, AutoCAD và DWG là nhãn hiệu hoặc nhãn hiệu đã đăng ký của Autodesk, Inc. và/hoặc các công ty con, công ty liên kết. DWG là định dạng tệp gốc của phần mềm Autodesk AutoCAD. tbc-acad-mcp là dự án mã nguồn mở độc lập, không liên kết, không được tài trợ hay chứng thực bởi Autodesk, Inc.
 
 ---
 
@@ -497,32 +455,32 @@ Thông báo bên thứ ba: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
 
 Mọi tool trừ `dwg_send_code` khai báo đủ cờ read-only, destructive, idempotent và open-world. Chế độ full có 69 tool; read-only mặc định có 17, còn `--toolsets all --read-only` expose 23 tool đọc bên dưới. Zoom có thể đổi trạng thái UI tạm thời. Chuyển target bị loại trong read-only; capture, inspect region và restore cũng bị loại vì tạo file ảnh. `dwg_health` là tool đọc; tùy chọn kiểm tra cập nhật có thể gọi GitHub.
 
-Chỉ cấp quyền bằng rule chính xác cho tool bạn muốn dùng. Tránh wildcard `mcp__dwg-mcp__*` vì nó cấp cả quyền sửa bản vẽ/file và thực thi mã. `dwg_send_code` không có annotations và không nằm trong allowlist đọc này; quyền cho phép lâu dài phải là lựa chọn rõ ràng trong MCP client.
+Chỉ cấp quyền bằng rule chính xác cho tool bạn muốn dùng. Tránh wildcard `mcp__tbc-acad-mcp__*` vì nó cấp cả quyền sửa bản vẽ/file và thực thi mã. `dwg_send_code` không có annotations và không nằm trong allowlist đọc này; quyền cho phép lâu dài phải là lựa chọn rõ ràng trong MCP client.
 
 <!-- read-only-allowlist:start -->
 ```text
-mcp__dwg-mcp__dwg_count_entities
-mcp__dwg-mcp__dwg_create_bake_issue_draft
-mcp__dwg-mcp__dwg_get_block_attributes
-mcp__dwg-mcp__dwg_get_current_target
-mcp__dwg-mcp__dwg_get_drawing_info
-mcp__dwg-mcp__dwg_get_drawing_profile
-mcp__dwg-mcp__dwg_get_entity_properties
-mcp__dwg-mcp__dwg_get_selected_texts
-mcp__dwg-mcp__dwg_get_variables
-mcp__dwg-mcp__dwg_health
-mcp__dwg-mcp__dwg_inspect_lisp
-mcp__dwg-mcp__dwg_list_available_targets
-mcp__dwg-mcp__dwg_list_bake_suggestions
-mcp__dwg-mcp__dwg_list_baked_tools
-mcp__dwg-mcp__dwg_list_blocks
-mcp__dwg-mcp__dwg_list_layers
-mcp__dwg-mcp__dwg_list_recent_drawings
-mcp__dwg-mcp__dwg_query_entities
-mcp__dwg-mcp__dwg_select_by_layer
-mcp__dwg-mcp__dwg_select_by_type
-mcp__dwg-mcp__dwg_zoom_extents
-mcp__dwg-mcp__dwg_zoom_to_entity
-mcp__dwg-mcp__dwg_zoom_window
+mcp__tbc-acad-mcp__dwg_count_entities
+mcp__tbc-acad-mcp__dwg_create_bake_issue_draft
+mcp__tbc-acad-mcp__dwg_get_block_attributes
+mcp__tbc-acad-mcp__dwg_get_current_target
+mcp__tbc-acad-mcp__dwg_get_drawing_info
+mcp__tbc-acad-mcp__dwg_get_drawing_profile
+mcp__tbc-acad-mcp__dwg_get_entity_properties
+mcp__tbc-acad-mcp__dwg_get_selected_texts
+mcp__tbc-acad-mcp__dwg_get_variables
+mcp__tbc-acad-mcp__dwg_health
+mcp__tbc-acad-mcp__dwg_inspect_lisp
+mcp__tbc-acad-mcp__dwg_list_available_targets
+mcp__tbc-acad-mcp__dwg_list_bake_suggestions
+mcp__tbc-acad-mcp__dwg_list_baked_tools
+mcp__tbc-acad-mcp__dwg_list_blocks
+mcp__tbc-acad-mcp__dwg_list_layers
+mcp__tbc-acad-mcp__dwg_list_recent_drawings
+mcp__tbc-acad-mcp__dwg_query_entities
+mcp__tbc-acad-mcp__dwg_select_by_layer
+mcp__tbc-acad-mcp__dwg_select_by_type
+mcp__tbc-acad-mcp__dwg_zoom_extents
+mcp__tbc-acad-mcp__dwg_zoom_to_entity
+mcp__tbc-acad-mcp__dwg_zoom_window
 ```
 <!-- read-only-allowlist:end -->
