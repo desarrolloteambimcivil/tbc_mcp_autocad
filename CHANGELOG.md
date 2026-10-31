@@ -1,8 +1,8 @@
 # Changelog
 
-## tbc-acad-mcp — Unreleased
+## tbc-acad-mcp 2.2.0 — 2026-10-31
 
-First changes of the fork of [bimwright/dwg-mcp](https://github.com/bimwright/dwg-mcp) (forked at upstream `0d540ee`, the unreleased 2.1.1 below).
+First release of the fork of [bimwright/dwg-mcp](https://github.com/bimwright/dwg-mcp) (forked at upstream `0d540ee`, the unreleased 2.1.1 below).
 
 ### Rebrand
 
@@ -18,6 +18,12 @@ First changes of the fork of [bimwright/dwg-mcp](https://github.com/bimwright/dw
 - `dwg_query_entities` reads MLeader text: `text` returns its stored string and `position` its text location.
 - New optional field `plain_text` gives what the drawing shows: `%%c` as Ø, `%%d` as °, `%%p` as ±, `%%nnn` and `\U+XXXX` decoded, MText formatting removed and paragraphs as new lines. `text` stays the stored string, which rewrites keep using.
 - `dwg_get_entity_properties` adds `plain_text` for DBText, MText and MLeader, and `dwg_get_block_attributes` adds `plain_value` to each attribute.
+
+### Distribution
+
+- CI builds the client setup ZIP (`TbcAcadMcp.Setup-v<version>-win-x64.zip` with its `.sha256`) on every run, the asset each release publishes.
+- The first own release makes the health update check work: until now it returned `http_404` because the repository had no release.
+- The TBC-MCP suite installer ([tbc_mcp_setup](https://github.com/desarrolloteambimcivil/tbc_mcp_setup)) installs this ZIP together with tbc-revit-mcp from a single `.exe`.
 
 ### Civil 3D
 

@@ -14,7 +14,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>tbc-acad-mcp</ToolCommandName>
     <PackageId>TbcAcadMcp.Server</PackageId>
-    <Version>2.1.1</Version>
+    <Version>2.2.0</Version>
     <IncludeSourceRevisionInInformationalVersion>true</IncludeSourceRevisionInInformationalVersion>
     <Authors>Nour Rouas</Authors>
     <Description>tbc-acad-mcp: MCP gateway for AutoCAD and Civil 3D 2022-2027 DWG workflows (fork of bimwright/dwg-mcp): drawing reads, text reading and rewriting, target routing, optional ToolBaker, and opt-in code execution.</Description>

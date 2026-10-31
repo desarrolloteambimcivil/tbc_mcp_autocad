@@ -77,6 +77,8 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for threading, discovery, and auth detail
 
 Download the client setup ZIP from [GitHub Releases](https://github.com/desarrolloteambimcivil/tbc_mcp_autocad/releases/latest). It includes a self-contained MCP server and release-specific AutoCAD plugins. Check `packedAutocadYears` in the downloaded ZIP's `manifest.json` and its bundle `PackageContents.xml` for the included years; check the release notes for years verified in a running AutoCAD host. Source shells cover 2022–2027, while packaged plugins and tested host years depend on the release. For a year absent from the package, build the plugin from source with that year's AutoCAD SDK.
 
+To install tbc-acad-mcp and [tbc-revit-mcp](https://github.com/desarrolloteambimcivil/tbc_mcp_revit) together with one Windows installer, use the TBC-MCP suite setup from [tbc_mcp_setup](https://github.com/desarrolloteambimcivil/tbc_mcp_setup/releases/latest). The steps below install the ZIP alone.
+
 ```powershell
 $tag = (Invoke-RestMethod https://api.github.com/repos/desarrolloteambimcivil/tbc_mcp_autocad/releases/latest).tag_name
 $zip = "$env:TEMP\TbcAcadMcp.Setup-$tag-win-x64.zip"
@@ -197,7 +199,7 @@ After reconnect, compare fresh `initialize.serverInfo` and the health tool's `_m
 
 ## Tools
 
-Version 2.1.1 exposes 45 tools at default startup: query (including `dwg_get_drawing_profile` and `dwg_inspect_lisp`), modify, meta (including `dwg_send_code`/`dwg_run_lisp`), view, and default-on `dwg_capture_view_image`. Optional ToolBaker, annotation, block, dimension, export, and drawing toolsets, enabled through `--toolsets`, bring the backed MCP surface to 69 tools. The registered counts include `dwg_run_lisp`, which only returns a refusal; no scan verdict authorizes execution.
+Version 2.2.0 exposes 45 tools at default startup: query (including `dwg_get_drawing_profile` and `dwg_inspect_lisp`), modify, meta (including `dwg_send_code`/`dwg_run_lisp`), view, and default-on `dwg_capture_view_image`. Optional ToolBaker, annotation, block, dimension, export, and drawing toolsets, enabled through `--toolsets`, bring the backed MCP surface to 69 tools. The registered counts include `dwg_run_lisp`, which only returns a refusal; no scan verdict authorizes execution.
 
 With no drawing open, use `dwg_list_recent_drawings` → user chooses → `dwg_open_drawing(path)`. Both are standalone `meta` tools; recent is available under `--read-only`, open is not (even with file `read_only=true`). Native dialogs may require the user; timeouts do not cancel an Open already running. See [drawing session tools](#drawing-session-tools) for parameters, API references and verification limits.
 

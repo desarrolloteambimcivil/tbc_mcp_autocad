@@ -3,7 +3,7 @@
   "name": "io.github.desarrolloteambimcivil/tbc-acad-mcp",
   "title": "tbc-acad-mcp",
   "description": "MCP gateway for Autodesk AutoCAD and Civil 3D 2022-2027: read and edit DWG drawings from AI agents",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "repository": {
     "url": "https://github.com/desarrolloteambimcivil/tbc_mcp_autocad",
     "source": "github"
@@ -14,7 +14,7 @@
     {
       "registryType": "nuget",
       "identifier": "TbcAcadMcp.Server",
-      "version": "2.1.1",
+      "version": "2.2.0",
       "transport": {
         "type": "stdio"
       }
